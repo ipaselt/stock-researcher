@@ -118,3 +118,93 @@ def test_score_unreadable_snapshot(tmp_cwd, content, capsys):
     assert cli.main(["score", "AAPL"]) == 2
     assert capsys.readouterr().err.startswith("unreadable snapshot data/AAPL.json: ")
     assert not (tmp_cwd / "data" / "AAPL.score.json").exists()
+
+
+# --- run / assemble / ledger (S3) -------------------------------------------------------------------------
+
+def test_run_end_to_end(tmp_cwd, fake_cli_provider, capsys):
+    assert cli.main(["run", "aapl"]) == 0
+    out = capsys.readouterr().out.strip().splitlines()
+    assert out[0].startswith("wrote data/AAPL.json")
+    assert out[1] == "AAPL: score 60.1 (good), coverage 94%, label HAS RUN (L7), entry 250.80"
+    assert out[2] == "wrote data/AAPL/skeleton.md"
+    data = _strict_json((tmp_cwd / "data" / "AAPL.score.json").read_text(encoding="utf-8"))
+    assert data["total"] == 60.1
+    assert data["fair_value"]["entry_price"] == pytest.approx(250.799, abs=1e-3)
+    skeleton = (tmp_cwd / "data" / "AAPL" / "skeleton.md").read_text(encoding="utf-8")
+    assert "| Suggested label | HAS RUN (L7) |" in skeleton and "= **$250.80**" in skeleton
+
+
+def test_run_regenerates(tmp_cwd, fake_cli_provider, capsys):
+    (tmp_cwd / "data" / "AAPL").mkdir(parents=True)
+    for name in ("skeleton.md", "bear-case.md", "verdict.md", "valuation.md"):
+        (tmp_cwd / "data" / "AAPL" / name).write_text("stale", encoding="utf-8")
+    assert cli.main(["run", "AAPL"]) == 0
+    assert (tmp_cwd / "data" / "AAPL" / "skeleton.md").read_text(encoding="utf-8").startswith("# AAPL")
+    assert sorted(p.name for p in (tmp_cwd / "data" / "AAPL").iterdir()) == ["skeleton.md"]
+
+
+def test_assemble_rejects_quoted_none_override(tmp_cwd, fake_cli_provider, capsys):
+    assert cli.main(["run", "AAPL"]) == 0
+    _write_run_inputs(tmp_cwd)
+    (tmp_cwd / "data" / "AAPL" / "verdict.md").write_text(
+        '---\nlabel_final: WAIT\nentry_target: 250.80\noverride_reason: "none"\n---\n### Thesis\nx\n',
+        encoding="utf-8")
+    capsys.readouterr()
+    assert cli.main(["assemble", "AAPL", "--date", "2026-09-28"]) == 2
+    assert "without an override_reason" in capsys.readouterr().err
+    assert not (tmp_cwd / "reports").exists()
+
+
+@pytest.mark.parametrize("ticker, err", [("ZZZZZZ", "not found"), ("1ABC", "invalid ticker")])
+def test_run_ticker_errors(tmp_cwd, fake_cli_provider, ticker, err, capsys):
+    assert cli.main(["run", ticker]) == 2
+    assert err in capsys.readouterr().err
+    assert not (tmp_cwd / "data").exists()
+
+
+def _write_run_inputs(tmp_cwd):
+    run_dir = tmp_cwd / "data" / "AAPL"
+    for agent in ["valuation", "growth-quality", "balance-sheet-risk", "technicals", "news-catalysts"]:
+        (run_dir / f"{agent}.md").write_text(f"{agent} finding.\n", encoding="utf-8")
+    (run_dir / "verdict.md").write_text(
+        "---\nlabel_final: HAS RUN\nentry_target: 250.80\noverride_reason: none\n---\n"
+        "### Thesis\nQuality at a full price.\n\n### Key risks\n- valuation\n", encoding="utf-8")
+
+
+def test_assemble_and_ledger_end_to_end(tmp_cwd, fake_cli_provider, capsys):
+    assert cli.main(["run", "AAPL"]) == 0
+    _write_run_inputs(tmp_cwd)
+    capsys.readouterr()
+    assert cli.main(["assemble", "aapl", "--date", "2026-09-28"]) == 0
+    assert capsys.readouterr().out.splitlines() == ["wrote reports/AAPL-2026-09-28.md", "ledger: 1 rows"]
+    report = (tmp_cwd / "reports" / "AAPL-2026-09-28.md").read_text(encoding="utf-8")
+    assert report.startswith("---\ndate: 2026-09-28\nticker: AAPL\n")
+    assert "Quality at a full price." in report and "## Bear case" not in report
+    csv_lines = (tmp_cwd / "reports" / "ratings.csv").read_text(encoding="utf-8").splitlines()
+    assert csv_lines[1] == "2026-09-28,AAPL,341.655,60.1,0.94,295.06,250.8,HAS RUN,L7,HAS RUN,reports/AAPL-2026-09-28.md"
+    assert cli.main(["ledger"]) == 0
+    assert capsys.readouterr().out.strip() == "ledger: 1 rows"
+
+
+def test_assemble_missing_verdict(tmp_cwd, fake_cli_provider, capsys):
+    assert cli.main(["run", "AAPL"]) == 0
+    capsys.readouterr()
+    assert cli.main(["assemble", "AAPL"]) == 2
+    assert "missing verdict" in capsys.readouterr().err
+    assert not (tmp_cwd / "reports").exists()
+
+
+def test_assemble_missing_skeleton(tmp_cwd, capsys):
+    assert cli.main(["assemble", "AAPL"]) == 2
+    assert "missing skeleton" in capsys.readouterr().err
+
+
+def test_assemble_bad_date(tmp_cwd, capsys):
+    assert cli.main(["assemble", "AAPL", "--date", "28/09/2026"]) == 2
+    assert "invalid --date" in capsys.readouterr().err
+
+
+def test_ledger_empty(tmp_cwd, capsys):
+    assert cli.main(["ledger"]) == 0
+    assert capsys.readouterr().out.strip() == "ledger: 0 rows"

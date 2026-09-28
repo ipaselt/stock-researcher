@@ -9,7 +9,7 @@ def test_version(capsys):
 
 
 def test_stub_not_implemented(capsys):
-    assert main(["assemble", "AAPL"]) == 2  # still a stub (S3)
+    assert main(["verify-citations", "AAPL"]) == 2  # still a stub (S5)
     assert "not implemented" in capsys.readouterr().err
 
 
