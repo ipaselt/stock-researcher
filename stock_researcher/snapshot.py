@@ -43,6 +43,7 @@ class Valuation:
     trailing_eps: float | None = None
     fcf_yield: float | None = None
     earnings_yield: float | None = None
+    fiscal_year_pe: list[float] | None = None  # year-end P/E per fiscal year, positive-EPS years, most recent first
 
 
 @dataclass
@@ -213,6 +214,28 @@ def _last(series: pd.Series) -> float | None:
     return _num(series.iloc[-1]) if not series.empty else None
 
 
+def fiscal_year_pe(close: pd.Series, income: pd.DataFrame) -> list[float]:
+    """Year-end P/E per annual income-statement column, most recent first.
+
+    P/E = last close on/before the fiscal year-end ÷ that year's Diluted EPS. Years with missing or
+    non-positive EPS, or no close on/before the date, are skipped.
+    """
+    row = INCOME_ROWS["eps"]
+    if close.empty or row not in income.index or income.columns.empty:
+        return []
+    eps = pd.Series(income.loc[row].to_numpy(), index=pd.to_datetime(income.columns))
+    out = []
+    for date in sorted(eps.index, reverse=True):
+        e = _num(eps[date])
+        prior = close[close.index <= date]
+        if e is None or e <= 0 or prior.empty:
+            continue
+        pe = safe_div(prior.iloc[-1], e)
+        if pe is not None:
+            out.append(pe)
+    return out
+
+
 def fields_missing(snapshot: Snapshot) -> list[str]:
     """`group.field` paths of every numeric field that is None."""
     missing = []
@@ -257,6 +280,7 @@ def build_snapshot(provider, ticker: str, as_of: str | None = None) -> Snapshot:
         val["forward_eps"] = safe_div(price, val.get("forward_pe"))
     val["fcf_yield"] = safe_div(hea.get("free_cashflow"), meta.get("market_cap"))
     val["earnings_yield"] = safe_div(1, val.get("trailing_pe"))
+    val["fiscal_year_pe"] = fiscal_year_pe(close, income) or None
 
     # growth (annual income statement)
     gro["revenue_cagr_3y"] = _income_cagr(income, INCOME_ROWS["revenue"], 3)

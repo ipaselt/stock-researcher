@@ -43,3 +43,55 @@ def test_snapshot_dotted_ticker_passes_validation(tmp_cwd, fake_cli_provider, ca
     # BRK.B is a valid symbol shape; with no fixture the fake provider reports it unknown.
     assert cli.main(["snapshot", "brk.b"]) == 2
     assert "not found" in capsys.readouterr().err
+
+
+SCORE_KEYS = ["ticker", "as_of", "price", "total", "band_word", "coverage_pct", "categories", "metrics",
+              "fair_value", "label_suggestion"]
+
+
+def _strict_json(text):
+    def reject(constant):
+        raise ValueError(f"non-finite constant {constant}")
+    return json.loads(text, parse_constant=reject)
+
+
+def test_score_end_to_end(tmp_cwd, fake_cli_provider, capsys):
+    assert cli.main(["snapshot", "AAPL"]) == 0
+    capsys.readouterr()
+    assert cli.main(["score", "aapl"]) == 0
+    data = _strict_json((tmp_cwd / "data" / "AAPL.score.json").read_text(encoding="utf-8"))
+    assert list(data) == SCORE_KEYS
+    assert data["ticker"] == "AAPL" and data["as_of"] and data["price"] == 341.655
+    assert set(data["categories"]) == {"valuation", "growth", "profitability", "health", "momentum"}
+    assert len(data["metrics"]) == 18
+    coverage = next(m for m in data["metrics"] if m["field"] == "health.interest_coverage")
+    assert not coverage["covered"] and coverage["note"] == "no reported interest expense"
+    assert data["coverage_pct"] == 0.94
+    fv, label = data["fair_value"], data["label_suggestion"]
+    assert fv["fair_pe_source"] == "historical_median" and fv["n_years"] == 4
+    assert label["rule_id"] in {f"L{i}" for i in range(1, 9)}
+    entry = "n/a" if label["entry_target"] is None else f"{label['entry_target']:.2f}"
+    assert capsys.readouterr().out.strip() == (
+        f"AAPL: score {data['total']:.1f} ({data['band_word']}), coverage 94%, "
+        f"label {label['label']} ({label['rule_id']}), entry {entry}"
+    )
+
+
+def test_score_sparse_ticker_is_not_looking(tmp_cwd, fake_cli_provider, capsys):
+    assert cli.main(["snapshot", "HCMC"]) == 0
+    assert cli.main(["score", "HCMC"]) == 0
+    data = _strict_json((tmp_cwd / "data" / "HCMC.score.json").read_text(encoding="utf-8"))
+    assert data["label_suggestion"]["rule_id"] == "L1"
+    assert data["fair_value"]["fair_value"] is None
+
+
+def test_score_missing_snapshot(tmp_cwd, capsys):
+    assert cli.main(["score", "AAPL"]) == 2
+    assert "no snapshot" in capsys.readouterr().err
+    assert not (tmp_cwd / "data").exists()
+
+
+@pytest.mark.parametrize("bad", ["1ABC", "CON"])
+def test_score_rejects_bad_ticker(tmp_cwd, bad, capsys):
+    assert cli.main(["score", bad]) == 2
+    assert capsys.readouterr().err
