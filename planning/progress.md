@@ -6,4 +6,4 @@
 > *(Where-are-we = this board + the top of `../memory/completed-tasks.md`; what's-next = `todo.md`.)*
 
 ## In progress
-- 🔄 **#4** S4 Agents + command · **owner:** opus-worker (sub-agent) · branch `branches/s4-agents` · status: dispatched 2026-09-28 — six `.claude/agents/*.md` from `planning/research/agent-contract.md`, `.claude/commands/research.md` from `planning/research/research-command.md`, `tests/test_agent_files.py` → PR `needs-review` → merge → the planner runs the first live `/research AAPL`.
+- 🔄 **#5** S5 Guards · **owner:** opus-worker (sub-agent) · branch `branches/s5-guards` · status: dispatched 2026-09-28 — `verify-citations` (JSON block + prose citations vs snapshot/score, 1% tolerance, result into the report appendix), provider retry/backoff, `run --offline`, `test_live.py` (AAPL canary + NVDA split-consistency), command step-5 wording → PR `needs-review`.

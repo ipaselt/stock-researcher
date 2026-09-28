@@ -2,6 +2,14 @@
 
 *(The planner moves merged tasks here from `../planning/progress.md`.)*
 
+- ✅ **research: AAPL** — 2026-09-28, first live pass (S4 acceptance). `run` → five Opus analysts (dispatched as
+  general-purpose + role file from the dev-root session) → planner verdict → `assemble` → `reports/AAPL-2026-09-28.md`
+  (04d1a76), ledger 1 row. Result: 60.1 / good / 94% / HAS RUN (L7) confirmed, entry 250.80. No assembly
+  warnings. Citation check not yet available (S5).
+- ✅ **#4** S4 Agents + command — 2026-09-28, PR #4 merged (41bcb50). Six Opus agent definitions transcribed
+  from `planning/research/agent-contract.md`, `.claude/commands/research.md` from `research-command.md`
+  (v1.1: owner-only invocation, scoped report commit, bear-case inputs), `test_agent_files.py` anchored to the
+  spec. 469 tests. Review: SHIP against the official sub-agent / slash-command docs.
 - ✅ **#3** S3 Output — 2026-09-28, PR #3 merged (c164079). `report.py` (12-section skeleton, slot markers,
   `assemble` with verdict validation and the override protocol), `ledger.py` (ratings.csv rebuilt from report
   front-matter), CLI `run` / `assemble --date` / `ledger`, docs (scorecard, fair-value, labels, README) with
