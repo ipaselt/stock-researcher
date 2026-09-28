@@ -2,6 +2,11 @@
 
 *(The planner moves merged tasks here from `../planning/progress.md`.)*
 
+- ✅ **#6** S6 Polish + guard follow-ups — 2026-09-28, PR #6 merged (51afce6). Guard: version numbers, `percent`,
+  integer-next-to-metric-word, ordered multi-key pairing, range bounds, NOISE_RE pinned, metric-word list
+  extended; `score --table`; README walkthrough (sample report, a run step by step, design choices); agent
+  contract v1.2. 583 tests. Review round 1 DO-NOT-SHIP (decimal-skip bypass) → reworked → round 2 SHIP with
+  0 mutation survivors. AAPL report re-assembled after the news section was re-verified (08a9ee8).
 - ✅ **research: AAPL (re-verify)** — 2026-09-28 (2b1f4db). Under contract v1.1 three analysts failed the
   citation check (uncited numbers; one mis-windowed citation); re-dispatched once with the failure lines, all
   five PASS; report re-assembled with `citation check: PASS (5/5 agents)`. Label unchanged: HAS RUN (L7).

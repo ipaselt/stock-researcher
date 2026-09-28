@@ -6,18 +6,17 @@
 > Loop (canonical spec: KORTANNA §9): the planner moves a task `todo.md → progress.md` (`🔄`) **at dispatch**;
 > the worker builds in `branches/<slug>/` → PR → independent review → `reviewed-pass` → merge → the planner
 > moves it to `../memory/completed-tasks.md` (`✅`). Here workers are Opus sub-agents dispatched by the
-> Fable planner session, so `session:` is the sub-agent run, not a separate session id.
+> Fable planner session (manual `git worktree add branches/<slug> -b <slug>`; the built-in worktree isolation
+> fails on this machine because `jq` is missing).
 
 ## Queue
-*(stable `#N` IDs — never renumber. Every slice → plan: `planning/plans/stock-researcher-v1.md` (slice: S<N>).)*
-- ⏳ **#1** S1 Data layer — provider Protocol + yfinance provider + captured fixtures (AAPL, sparse, negative-EPS, unknown) + FakeProvider/no-network guard + snapshot/normalize + technicals + `snapshot` CLI · **owner:** unassigned · branch `s1-data-layer`
-- ⏳ **#2** S2 Scoring — scorecard + fair value + labels L1-L8 + `score` CLI · **owner:** unassigned · branch `s2-scoring` · ⚠ scoring math = data-fidelity trigger → recommend `/code-review ultra` before merge · **decisions carried from the S1 review:** (a) `total_debt` ≤ 0 → `cash_to_debt` and `interest_coverage` grade A ("no meaningful debt"), not "missing"; `interest_coverage` None with debt > 0 (AAPL: no reported interest expense) → skipped + renormalized, flagged in the report; (b) `revenue_cagr_5y` was removed in S1 (yfinance gives a 4-year span) — the scorecard uses `revenue_cagr_3y` only
-- ⏳ **#3** S3 Output — report skeleton + `assemble` + front-matter + derived ledger + `run` CLI + docs (scorecard/fair-value/labels/README) · **owner:** unassigned · branch `s3-output`
-- ⏳ **#4** S4 Agents + command — five Opus agent files + shared contract + `.claude/commands/research.md`; first live `/research AAPL` · **owner:** unassigned · branch `s4-agents`
-- ⏳ **#5** S5 Guards — `verify-citations`, bear-case agent, provider retry/backoff, `--offline`, `test_live.py` · **owner:** unassigned · branch `s5-guards` · **also (from the S2 review):** one live check that `fiscal_year_pe` is split-consistent — closes are split-adjusted, so confirm Yahoo's annual Diluted EPS is restated for a split inside the 5y window (NVDA 2024 split); if not, adjust EPS by the split factor or drop that year. And: `score` on a snapshot written before S2 (no `fiscal_year_pe`) silently falls back to the sector P/E — have `run` always regenerate the snapshot first.
-- ⏳ **#6** S6 Resume polish + guard follow-ups — sample report (citation-clean AAPL) committed, README walkthrough, console score table · **guard follow-ups from the S5 review:** decimal version numbers false-positive (`iOS 26.1`), plain-integer claims unchecked (`RSI is 86`), the word `percent` not a unit, multi-key parenthesis should match numbers to keys one-to-one, `NOISE_RE` unpinned by tests, integer ranges `12-38x` skip the lower bound · **owner:** unassigned · branch `s6-polish`
+*(stable `#N` IDs — never renumber. Plan v1 (#0-#6) is complete; the rows below are the backlog.)*
+- ⏳ **#7** Guard follow-ups from the S6 review — (a) the SMA/EMA/RSI/MACD period exemption is too broad: `RSI 86 is overbought.` uncited passes; keep any-integer only for SMA/EMA and limit RSI/MACD to plausible periods {2, 9, 12, 14, 21, 26}; (b) inside a citation window a unitless integer range (`215-999 (analyst.target_low, analyst.target_high)`) must count as two numbers · **owner:** unassigned · branch `s7-guard-followups`
+- ⏳ **#8** Research more tickers from a session rooted in this project (`/research <T>`): one sparse small-cap and one pre-profit name to exercise NOT LOOKING / L5 end to end (plan §Verification) · **owner:** planner
+- ⏳ **#9** `/code-review ultra` on the scoring + guard math (owner-run, optional; the owner chose to merge S2/S5 on the adversarial review alone)
 
 ## Deferred (phase 3, not planned in detail)
-- Paid provider (FMP / Polygon) behind the same Protocol · batch mode · dashboard.
+- Paid provider (FMP / Polygon) behind the same Protocol · batch mode (`research` over a watchlist) · dashboard
+  (Streamlit, like portfolio-lab) · ETF scorecard · Agent SDK wrapper if a standalone app is ever wanted.
 
 ✅ Completed → `../memory/completed-tasks.md` (the planner moves merged tasks there on merge).

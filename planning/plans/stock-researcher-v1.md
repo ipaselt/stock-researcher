@@ -1,5 +1,7 @@
 # Plan — stock-researcher (new project)
 
+> Status: **done** · Created 2026-09-28 · Completed 2026-09-28 (S0-S6 merged; see `memory/completed-tasks.md`).
+
 ## Context
 The user wants to restart stock research as a fresh, resume-worthy project: a stock research and rating
 engine run as a small "research firm." A Fable planner session orchestrates Opus sub-agents, each with one

@@ -6,4 +6,4 @@
 > *(Where-are-we = this board + the top of `../memory/completed-tasks.md`; what's-next = `todo.md`.)*
 
 ## In progress
-- 🔄 **#6** S6 Polish + guard follow-ups · **owner:** opus-worker (sub-agent) · branch `branches/s6-polish` · status: dispatched 2026-09-28 — guard follow-ups (version numbers, integer claims, `percent`, one-to-one multi-key, NOISE_RE test, integer ranges), `score --table`, README walkthrough with the AAPL sample → PR `needs-review`.
+*(empty — plan v1 complete 2026-09-28; next work comes from the backlog in `todo.md`)*

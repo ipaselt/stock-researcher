@@ -66,8 +66,8 @@ Run before reporting work complete. Only passing output should reach the user.
   independent review → `reviewed-pass` → merge. Scoring-math slices get flagged for `/code-review ultra`.
 
 ## Current State
-- 2026-09-28: S0-S5 merged (full `/research` flow + citation guard, 548 tests); first report `reports/AAPL-2026-09-28.md` citation-verified; S6 polish in flight.
-- Next: S6 merge, then research more tickers from a session rooted here. Status home: `memory/primer.md` (current) + `planning/progress.md` (in-flight).
+- 2026-09-28: plan v1 complete — S0-S6 merged (full `/research` flow + citation guard, 583 tests); sample report `reports/AAPL-2026-09-28.md` citation-verified.
+- Next: backlog `planning/todo.md` #7-#9 (guard follow-ups, more tickers from an in-project session). Status home: `memory/primer.md` (current) + `planning/progress.md` (in-flight).
 
 ## Key Decisions (ADRs)
 - Separate repo from `portfolio-lab` — that one is a holdings tracker; this is a rating engine. Lessons reused, code not.
