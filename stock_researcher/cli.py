@@ -104,7 +104,7 @@ def cmd_score(ticker: str) -> int:
 
 
 def cmd_run(ticker: str) -> int:
-    """snapshot -> score -> data/<T>/skeleton.md, always regenerated."""
+    """snapshot -> score -> data/<T>/skeleton.md, always regenerated; clears the previous run's data/<T>/*.md."""
     ticker = _checked(ticker)
     if not ticker or not _write_snapshot(ticker):
         return 2
@@ -114,6 +114,8 @@ def cmd_run(ticker: str) -> int:
     score, fv, label = _write_score(ticker, snapshot)
     out = Path("data") / ticker / "skeleton.md"
     out.parent.mkdir(parents=True, exist_ok=True)
+    for stale in out.parent.glob("*.md"):  # agent files, verdict, old skeleton: a new run starts clean
+        stale.unlink()
     out.write_text(report.render_skeleton(snapshot, score, fv, label), encoding="utf-8")
     print(f"wrote {out.as_posix()}")
     return 0

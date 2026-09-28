@@ -137,9 +137,23 @@ def test_run_end_to_end(tmp_cwd, fake_cli_provider, capsys):
 
 def test_run_regenerates(tmp_cwd, fake_cli_provider, capsys):
     (tmp_cwd / "data" / "AAPL").mkdir(parents=True)
-    (tmp_cwd / "data" / "AAPL" / "skeleton.md").write_text("stale", encoding="utf-8")
+    for name in ("skeleton.md", "bear-case.md", "verdict.md", "valuation.md"):
+        (tmp_cwd / "data" / "AAPL" / name).write_text("stale", encoding="utf-8")
     assert cli.main(["run", "AAPL"]) == 0
     assert (tmp_cwd / "data" / "AAPL" / "skeleton.md").read_text(encoding="utf-8").startswith("# AAPL")
+    assert sorted(p.name for p in (tmp_cwd / "data" / "AAPL").iterdir()) == ["skeleton.md"]
+
+
+def test_assemble_rejects_quoted_none_override(tmp_cwd, fake_cli_provider, capsys):
+    assert cli.main(["run", "AAPL"]) == 0
+    _write_run_inputs(tmp_cwd)
+    (tmp_cwd / "data" / "AAPL" / "verdict.md").write_text(
+        '---\nlabel_final: WAIT\nentry_target: 250.80\noverride_reason: "none"\n---\n### Thesis\nx\n',
+        encoding="utf-8")
+    capsys.readouterr()
+    assert cli.main(["assemble", "AAPL", "--date", "2026-09-28"]) == 2
+    assert "without an override_reason" in capsys.readouterr().err
+    assert not (tmp_cwd / "reports").exists()
 
 
 @pytest.mark.parametrize("ticker, err", [("ZZZZZZ", "not found"), ("1ABC", "invalid ticker")])

@@ -7,6 +7,7 @@ writes data/<T>/verdict.md; `assemble` -> reports/<T>-<date>.md with a flat `key
 """
 import json
 import math
+import re
 from pathlib import Path
 
 from . import fair_value
@@ -37,14 +38,26 @@ LIMITS_HEADING = "Stated limits (copied into every report):"
 STATED_LIMITS = fair_value.__doc__.split(LIMITS_HEADING, 1)[1].strip()  # the one source: the module docstring
 
 
+MARKER_RE = re.compile(r"^(<!-- (?:AGENT: [a-z-]+|VERDICT|SYNTHESIS|ASSEMBLY WARNINGS) -->)$", re.MULTILINE)
+QUOTE_KEYS = {"override_reason"}  # free text: always written as a JSON (= YAML double-quoted) string
+
+
 def slot(agent: str) -> str:
     return f"<!-- AGENT: {agent} -->"
+
+
+def section_block(heading: str, agent: str) -> str:
+    """The exact skeleton text of an agent section, as `render_skeleton` writes it (joined by a blank line)."""
+    return f"## {heading}\n\n{slot(agent)}\n"
 
 
 # --- formatting helpers ---------------------------------------------------------------------------------
 
 def fmt_money(v: float | None) -> str:
-    return "—" if v is None else f"${v:,.2f}"
+    """Dollars to cents; below $1 to 4 decimals so a sub-penny price does not print as $0.00."""
+    if v is None:
+        return "—"
+    return f"${v:,.4f}" if abs(v) < 1 else f"${v:,.2f}"
 
 
 def fmt_pct(v: float | None) -> str:
@@ -69,8 +82,29 @@ def _round(v: float | None, places: int = 2) -> float | None:
 
 # --- front-matter (flat `key: value` lines between `---` fences) -----------------------------------------
 
+def _yaml_value(key: str, value: str) -> str:
+    if key in QUOTE_KEYS or any(c in value for c in ':#"\'') or value != value.strip():
+        return json.dumps(value, ensure_ascii=False)
+    return value
+
+
+def _unquote(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] == '"':
+        try:
+            return json.loads(value)
+        except ValueError:
+            return value
+    if len(value) >= 2 and value[0] == value[-1] == "'":
+        return value[1:-1]
+    return value
+
+
+def is_none(value: str | None) -> bool:
+    return value is None or value.strip().lower() in ("", "none")
+
+
 def front_matter(values: dict) -> str:
-    return "---\n" + "".join(f"{k}: {v}\n" for k, v in values.items()) + "---\n"
+    return "---\n" + "".join(f"{k}: {_yaml_value(k, str(v))}\n" for k, v in values.items()) + "---\n"
 
 
 def parse_front_matter(text: str) -> tuple[dict, str] | None:
@@ -82,10 +116,12 @@ def parse_front_matter(text: str) -> tuple[dict, str] | None:
     for i, line in enumerate(lines[1:], start=1):
         if line.strip() == "---":
             return fields, "\n".join(lines[i + 1:])
+        if not line.strip():
+            continue
         key, sep, value = line.partition(":")
         if not sep or not key.strip():
             return None
-        fields[key.strip()] = value.strip()
+        fields[key.strip()] = _unquote(value.strip())
     return None  # no closing fence
 
 
@@ -184,7 +220,7 @@ def render_skeleton(snapshot, score, fv, label) -> str:
     m = snapshot.meta
     parts = [f"# {m.ticker} — {m.name or m.ticker}\n", _header(snapshot), _verdict(score, fv, label),
              _scorecard(score), _fair_value(snapshot, score, fv)]
-    parts += [f"## {heading}\n\n{slot(agent)}\n" for heading, agent in AGENT_SECTIONS]
+    parts += [section_block(heading, agent) for heading, agent in AGENT_SECTIONS]
     parts.append(f"## Synthesis\n\nRule fired: **{label.rule_id}** ({label.label}): {label.reason}.\n\n"
                  f"{SYNTHESIS_MARKER}\n")
     parts.append(_appendix(snapshot))
@@ -193,30 +229,28 @@ def render_skeleton(snapshot, score, fv, label) -> str:
 
 # --- assemble ---------------------------------------------------------------------------------------------
 
-def _read(path: Path, what: str) -> str:
+def _read(path: Path, what: str, encoding: str = "utf-8") -> str:
     if not path.exists():
         raise FileNotFoundError(f"missing {what}: {path.as_posix()}")
-    return path.read_text(encoding="utf-8")
+    return path.read_text(encoding=encoding)
 
 
-def _split_thesis(body: str) -> tuple[str, str]:
-    """(the `### Thesis` section's text, the rest of the verdict body)."""
+def _split_thesis(body: str) -> tuple[str | None, str]:
+    """(the `### Thesis` section's text or None when there is no such heading, the rest of the verdict body)."""
     lines = body.strip().splitlines()
-    try:
-        start = next(i for i, line in enumerate(lines) if line.strip() == "### Thesis")
-    except StopIteration:
-        return "", body.strip()
+    start = next((i for i, line in enumerate(lines) if line.strip() == "### Thesis"), None)
+    if start is None:
+        return None, body.strip()
     end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("### ")), len(lines))
     thesis = "\n".join(lines[start + 1:end]).strip()
     rest = "\n".join(lines[:start] + lines[end:]).strip()
     return thesis, rest
 
 
-def _drop_section(text: str, heading: str) -> str:
-    """Remove `## heading` and everything up to the next `## ` heading."""
-    start = text.index(f"## {heading}\n")
-    end = text.index("\n## ", start + 1) + 1
-    return text[:start] + text[end:]
+def _fill(skeleton: str, fills: dict[str, str]) -> str:
+    """Replace each marker line of the skeleton exactly once; inserted text is never scanned for markers."""
+    parts = MARKER_RE.split(skeleton)  # odd indexes are the markers themselves
+    return "".join(fills.get(part, part) if i % 2 else part for i, part in enumerate(parts))
 
 
 def _parse_verdict(text: str, label_suggested: str) -> tuple[dict, str]:
@@ -229,9 +263,9 @@ def _parse_verdict(text: str, label_suggested: str) -> tuple[dict, str]:
         raise ValueError(f"verdict.md front-matter missing {', '.join(missing)}")
     if fields["label_final"] not in LABELS:
         raise ValueError(f"verdict.md label_final {fields['label_final']!r} is not one of {sorted(LABELS)}")
-    if fields["label_final"] != label_suggested and fields["override_reason"].lower() == "none":
+    if fields["label_final"] != label_suggested and is_none(fields["override_reason"]):
         raise ValueError("verdict.md overrides the suggested label without an override_reason")
-    if fields["entry_target"].lower() != "none":
+    if not is_none(fields["entry_target"]):
         try:
             ok = math.isfinite(float(fields["entry_target"]))
         except ValueError:
@@ -244,47 +278,67 @@ def _parse_verdict(text: str, label_suggested: str) -> tuple[dict, str]:
 
 
 def assemble(ticker: str, data_dir: Path, reports_dir: Path, today: str) -> Path:
-    """Fill data/<T>/skeleton.md from the agent files and verdict.md; write reports/<T>-<today>.md."""
+    """Fill data/<T>/skeleton.md from the agent files and verdict.md; write reports/<T>-<today>.md.
+
+    A file older than skeleton.md belongs to an earlier run: a stale agent file counts as not reported, a stale
+    verdict.md is an error.
+    """
     data_dir, reports_dir = Path(data_dir), Path(reports_dir)
     run_dir = data_dir / ticker
-    text = _read(run_dir / "skeleton.md", "skeleton (run `run` first)")
+    skeleton_path = run_dir / "skeleton.md"
+    text = _read(skeleton_path, "skeleton (run `run` first)")
+    born = skeleton_path.stat().st_mtime
     result = json.loads(_read(data_dir / f"{ticker}.score.json", "score file"))
     suggestion, fv = result["label_suggestion"], result["fair_value"]
-    fields, body = _parse_verdict(_read(run_dir / "verdict.md", "verdict"), suggestion["label"])
+    verdict_path = run_dir / "verdict.md"
+    verdict_text = _read(verdict_path, "verdict", encoding="utf-8-sig")
+    if verdict_path.stat().st_mtime < born:
+        raise ValueError(f"stale verdict: {verdict_path.as_posix()} is older than skeleton.md (from an earlier run)")
+    fields, body = _parse_verdict(verdict_text, suggestion["label"])
 
-    warnings = []
-    for agent in AGENTS + OPTIONAL_AGENTS:
+    warnings, fills = [], {}
+    for heading, agent in AGENT_SECTIONS:
         path = run_dir / f"{agent}.md"
-        content = path.read_text(encoding="utf-8").strip() if path.exists() else ""
+        content = ""
+        if path.exists():
+            if path.stat().st_mtime < born:
+                warnings.append(f"stale {path.name} ignored (older than skeleton.md)")
+            else:
+                content = path.read_text(encoding="utf-8").strip()
         if content:
-            text = text.replace(slot(agent), content)
+            fills[slot(agent)] = content
         elif agent in OPTIONAL_AGENTS:
-            heading = next(h for h, a in AGENT_SECTIONS if a == agent)
-            text = _drop_section(text, heading)
+            block = section_block(heading, agent) + "\n"
+            if text.count(block) != 1:
+                raise ValueError(f"skeleton.md does not contain the {heading!r} section exactly once")
+            text = text.replace(block, "")
         else:
-            text = text.replace(slot(agent), "_(agent did not report)_")
+            fills[slot(agent)] = "_(agent did not report)_"
             warnings.append(f"{agent} agent did not report")
 
     thesis, rest = _split_thesis(body)
+    if thesis is None:
+        warnings.append("verdict.md has no '### Thesis' heading")
     label_final, override = fields["label_final"], fields["override_reason"]
-    if override.lower() == "none":
-        how = f"confirms the suggested {suggestion['label']} ({suggestion['rule_id']})"
-    else:
-        how = f"overrides the suggested {suggestion['label']} ({suggestion['rule_id']}): {override}"
+    reason = "" if is_none(override) else f": {override}"
+    verb = "confirms" if label_final == suggestion["label"] else "overrides"
+    how = f"{verb} the suggested {suggestion['label']} ({suggestion['rule_id']}){reason}"
     entry = fields["entry_target"]
-    entry_line = "none" if entry.lower() == "none" else fmt_money(float(entry))
-    verdict = f"**Final label: {label_final}** (entry target {entry_line}); {how}.\n\n{thesis}".rstrip()
-    text = text.replace(VERDICT_MARKER, verdict).replace(SYNTHESIS_MARKER, rest)
+    entry_line = "none" if is_none(entry) else fmt_money(float(entry))
+    verdict = f"**Final label: {label_final}** (entry target {entry_line}); {how}.\n\n{thesis or ''}"
+    fills[VERDICT_MARKER] = verdict.rstrip()
+    fills[SYNTHESIS_MARKER] = rest
     notes = "".join(f"- {w}\n" for w in warnings) if warnings else "- none\n"
-    text = text.replace(ASSEMBLY_MARKER, f"Assembly warnings:\n\n{notes}".rstrip())
+    fills[ASSEMBLY_MARKER] = f"Assembly warnings:\n\n{notes}".rstrip()
+    text = _fill(text, fills)
 
     name = f"{ticker}-{today}.md"
     values = {
         "date": today, "ticker": ticker, "price": _num(result["price"]), "score": _num(result["total"]),
         "coverage": _num(result["coverage_pct"]), "fair_value": _num(_round(fv["fair_value"])),
-        "entry": "none" if entry.lower() == "none" else _num(_round(float(entry))),
+        "entry": "none" if is_none(entry) else _num(_round(float(entry))),
         "label_suggested": suggestion["label"], "rule_id": suggestion["rule_id"], "label_final": label_final,
-        "override_reason": override, "report": f"{reports_dir.name}/{name}",
+        "override_reason": "none" if is_none(override) else override, "report": f"{reports_dir.name}/{name}",
     }
     reports_dir.mkdir(parents=True, exist_ok=True)
     out = reports_dir / name

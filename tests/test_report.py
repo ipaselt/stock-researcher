@@ -1,4 +1,5 @@
 import dataclasses
+import os
 import json
 
 import pytest
@@ -116,6 +117,30 @@ def test_front_matter_round_trip():
     assert report.parse_front_matter("no fence\n") is None
     assert report.parse_front_matter("---\na: 1\n") is None  # unclosed
     assert report.parse_front_matter("---\nnot a pair\n---\n") is None
+
+
+def test_front_matter_quotes_yaml_unsafe_values():
+    text = report.front_matter({"override_reason": "none", "a": "x: y", "b": "#tag", "c": 'say "hi"', "d": "plain"})
+    assert text.splitlines()[1:-1] == ['override_reason: "none"', 'a: "x: y"', 'b: "#tag"', 'c: "say \\"hi\\""',
+                                       "d: plain"]
+    fields, _ = report.parse_front_matter(text)
+    assert fields == {"override_reason": "none", "a": "x: y", "b": "#tag", "c": 'say "hi"', "d": "plain"}
+
+
+def test_parse_front_matter_single_quotes_and_blank_lines():
+    fields, body = report.parse_front_matter("---\na: 'quoted'\n\nb: 2\n---\nbody")
+    assert fields == {"a": "quoted", "b": "2"} and body == "body"
+
+
+def test_fmt_money_sub_dollar():
+    assert report.fmt_money(0.0001) == "$0.0001"
+    assert report.fmt_money(0.5) == "$0.5000"
+    assert report.fmt_money(1234.5) == "$1,234.50"
+
+
+def test_skeleton_sub_penny_price():
+    text = render_skeleton(*scored("HCMC"))
+    assert "| Price | $0.0001 |" in text and "$0.00 " not in text
 
 
 # --- assemble ---------------------------------------------------------------------------------------------
@@ -240,3 +265,72 @@ def test_same_day_rerun_overwrites(tmp_cwd, run_dir):
     assert list((tmp_cwd / "reports").iterdir()) == [second]
     text = second.read_text(encoding="utf-8")
     assert "second pass" in text and "valuation says hello." not in text
+
+
+def age(path, seconds=60):
+    """Make `path` older than it is (older than skeleton.md written just before it)."""
+    st = path.stat()
+    os.utime(path, (st.st_atime - seconds, st.st_mtime - seconds))
+
+
+def test_stale_agent_files_count_as_missing(tmp_cwd, run_dir):
+    write_agents(run_dir, AGENTS + OPTIONAL_AGENTS)
+    write_verdict(run_dir)
+    age(run_dir / "technicals.md")
+    age(run_dir / "bear-case.md")
+    text = do_assemble(tmp_cwd).read_text(encoding="utf-8")
+    assert "technicals says hello." not in text and "bear-case says hello." not in text
+    assert headings(text) == [h for h in HEADINGS if h != "Bear case"]
+    assert "- stale technicals.md ignored (older than skeleton.md)" in text
+    assert "- stale bear-case.md ignored (older than skeleton.md)" in text
+    assert "- technicals agent did not report" in text
+
+
+def test_stale_verdict_is_an_error(tmp_cwd, run_dir):
+    write_agents(run_dir, AGENTS)
+    write_verdict(run_dir)
+    age(run_dir / "verdict.md")
+    with pytest.raises(ValueError, match="stale verdict"):
+        do_assemble(tmp_cwd)
+    assert not (tmp_cwd / "reports").exists()
+
+
+def test_bear_case_heading_inside_agent_text_survives(tmp_cwd, run_dir):
+    write_agents(run_dir, AGENTS)
+    news = "### Findings\n\n## Bear case\n\nThe news agent quotes a heading.\n"
+    (run_dir / "news-catalysts.md").write_text(news, encoding="utf-8")
+    write_verdict(run_dir)
+    text = do_assemble(tmp_cwd).read_text(encoding="utf-8")
+    assert news.strip() in text
+    assert "<!--" not in text
+    assert text.count("## Bear case") == 1  # the one inside the news section
+    assert "## Synthesis" in text
+
+
+def test_marker_text_inside_agent_file_is_not_expanded(tmp_cwd, run_dir):
+    write_agents(run_dir, AGENTS)
+    (run_dir / "valuation.md").write_text("see <!-- AGENT: growth-quality --> and\n<!-- AGENT: growth-quality -->\n",
+                                          encoding="utf-8")
+    write_verdict(run_dir)
+    text = do_assemble(tmp_cwd).read_text(encoding="utf-8")
+    assert text.count("growth-quality says hello.") == 1
+    assert text.count("<!-- AGENT: growth-quality -->") == 2  # only the valuation agent's literal text
+
+
+def test_confirm_with_note_says_confirms(tmp_cwd, run_dir):
+    write_agents(run_dir, AGENTS)
+    write_verdict(run_dir, reason="checked (valuation.forward_pe)")
+    text = do_assemble(tmp_cwd).read_text(encoding="utf-8")
+    assert "confirms the suggested HAS RUN (L7): checked (valuation.forward_pe)." in text
+    assert "overrides" not in text
+
+
+def test_verdict_bom_blank_lines_and_no_thesis(tmp_cwd, run_dir):
+    write_agents(run_dir, AGENTS)
+    (run_dir / "verdict.md").write_text(
+        "\ufeff---\nlabel_final: HAS RUN\n\nentry_target: 250.80\noverride_reason: none\n---\n### Key risks\n- x\n",
+        encoding="utf-8")
+    text = do_assemble(tmp_cwd).read_text(encoding="utf-8")
+    assert "**Final label: HAS RUN**" in text
+    assert "- verdict.md has no '### Thesis' heading" in text
+    assert "### Key risks" in text.split("## Synthesis")[1]
