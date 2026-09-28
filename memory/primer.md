@@ -13,7 +13,10 @@
   Fixture tickers: AAPL, SPY, HCMC (sparse OTC), RIVN (negative EPS), ZZZZZZ (unknown). `normalize()` returns
   `(groups, warnings)`; `fields_missing` is computed on the final Snapshot as `group.field` paths.
   `revenue_cagr_5y` does not exist (yfinance gives a 4-year span).
-- **S2 scoring dispatched 2026-09-28** — gate: adversarial review, then the human runs `/code-review ultra`.
+- **S2 scoring merged 2026-09-28 (PR #2, 31cc8b6)**: `score AAPL` → 60.1 (good), coverage 94%, fair value
+  295.06 (median fiscal-year P/E 30.78 over 4 years), entry 250.80, HAS RUN (L7). 370 tests. The B/C/D band
+  edges are ratified (decisions.md) and pinned by a golden test. Owner chose to merge without the ultra pass.
+- **S3 output dispatched 2026-09-28** (report skeleton, assemble, ledger, `run`, docs).
 - Nothing researched yet. No reports.
 
 ## Verified facts (don't re-derive)

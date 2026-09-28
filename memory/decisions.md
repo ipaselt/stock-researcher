@@ -33,6 +33,15 @@ Agent tool's model override; Fable reads the findings.
 To keep Fable's context small: each research agent writes `data/<T>/<agent>.md` and returns a short JSON
 summary; `assemble` stitches agent files + Fable's short `verdict.md` into the report.
 
+## 2026-09-28 — Scorecard B/C/D bands ratified; near-zero EPS floor; negative equity skipped
+The plan file carried only the A and F edges; the full A/B/C/D table came from the design pass and was
+handed to the S2 worker verbatim, so the intermediate edges in `scorecard.py` are the designed values, not
+invented ones. Ratified as v1 and pinned by a golden-table test; changing any edge means changing the test,
+the code, and `docs/scorecard.md` together. Two S2 refinements adopted from review: (1) forward P/E above
+100 (forward earnings yield < 1%) yields no earnings-based fair value, same as EPS ≤ 0 — a $0.02 EPS should
+not produce a $0.40 "entry price"; (2) negative `debt_to_equity` (buyback-driven negative equity) is
+skipped, not graded A, because the ratio has no reading there.
+
 ## 2026-09-28 — Ledger derived from report front-matter
 `main-protection` allows only `.md` commits on main outside PRs. Reports are `.md` with YAML front-matter;
 `reports/ratings.csv` is regenerated from them (gitignored), so a research run commits without a PR.

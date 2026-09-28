@@ -2,6 +2,12 @@
 
 *(The planner moves merged tasks here from `../planning/progress.md`.)*
 
+- ✅ **#2** S2 Scoring — 2026-09-28, PR #2 merged (31cc8b6). One METRICS table (18 metrics, 5 categories,
+  weights 30/20/20/20/10), one `grade()`, documented special cases; fair value = forward EPS × median
+  fiscal-year P/E (≥3 years, else sector default), ±15% band, tiered margin of safety, near-zero-EPS floor;
+  labels L1-L8; `score` CLI. 370 tests incl. a golden table pinning every edge and weight. Review: SHIP, AAPL
+  numbers reproduced by hand (60.1 / good / HAS RUN L7 / entry 250.80); 5 surviving mutations closed in the
+  hardening commit. Merged on the owner's instruction without the ultra pass.
 - ✅ **#1** S1 Data layer — 2026-09-28, PR #1 merged (f22eafc). Provider Protocol + yfinance provider, FIELDS
   unit table, Snapshot with derived fields, technicals, `snapshot` CLI, fixtures (AAPL, SPY, HCMC sparse, RIVN
   negative-EPS, ZZZZZZ unknown), FakeProvider + no-network guard, 99 tests. Review round 1 found 3 MAJORs

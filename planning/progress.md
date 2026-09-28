@@ -6,4 +6,4 @@
 > *(Where-are-we = this board + the top of `../memory/completed-tasks.md`; what's-next = `todo.md`.)*
 
 ## In progress
-- 🔄 **#2** S2 Scoring · **owner:** opus-worker (sub-agent) · branch `branches/s2-scoring` · status: dispatched 2026-09-28 — scorecard + fair value + labels L1-L8 + `score` CLI → PR `needs-review` → adversarial review → **human runs `/code-review ultra` (scoring math = data-fidelity trigger) before merge**.
+- 🔄 **#3** S3 Output · **owner:** opus-worker (sub-agent) · branch `branches/s3-output` · status: dispatched 2026-09-28 — report skeleton + `assemble` + front-matter + derived ledger + `run` CLI + docs (scorecard / fair-value / labels / README) + docs-vs-code test → PR `needs-review`.
