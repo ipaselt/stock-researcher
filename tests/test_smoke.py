@@ -8,8 +8,8 @@ def test_version(capsys):
     assert "0.1.0" in capsys.readouterr().out
 
 
-def test_snapshot_not_implemented(capsys):
-    assert main(["snapshot", "AAPL"]) == 2
+def test_stub_not_implemented(capsys):
+    assert main(["score", "AAPL"]) == 2
     assert "not implemented" in capsys.readouterr().err
 
 

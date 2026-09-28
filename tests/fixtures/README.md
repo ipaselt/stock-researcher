@@ -1,0 +1,4 @@
+# Test fixtures
+Raw provider output captured once from Yahoo (yfinance 1.5.1) on 2026-09-28 by `scripts/capture_fixtures.py`; tests read them through `FakeProvider` in `tests/conftest.py` and never touch the network.
+Tickers: **AAPL** (the full case), **SPY** (benchmark history), **HCMC** (sparse case: sub-penny OTC Pink name with ~18 missing info fields, empty news/targets, and `trailingPE` returned as the string `"Infinity"`), **RIVN** (negative-EPS case: pre-profit, negative trailing/forward EPS and forward P/E, debtToEquity > 100), **ZZZZZZ** (unknown symbol: info only, Yahoo returns `{"trailingPegRatio": null}`).
+Refresh: `.venv/Scripts/python.exe scripts/capture_fixtures.py AAPL SPY HCMC RIVN ZZZZZZ`, then re-run pytest; tests read expected values from the fixtures, so only hand-written values need checking.

@@ -1,9 +1,32 @@
 import argparse
+import re
 import sys
+from pathlib import Path
 
 from . import __version__
+from .providers import TickerNotFound, get_provider
+from .snapshot import build_snapshot, to_json
 
 TICKER_COMMANDS = ["run", "snapshot", "score", "assemble", "verify-citations"]
+TICKER_RE = re.compile(r"^[A-Z][A-Z.\-]{0,5}$")
+
+
+def cmd_snapshot(ticker: str) -> int:
+    ticker = ticker.upper()
+    if not TICKER_RE.match(ticker):
+        print(f"invalid ticker {ticker!r}", file=sys.stderr)
+        return 2
+    try:
+        snapshot = build_snapshot(get_provider(), ticker)
+    except TickerNotFound:
+        print(f"ticker not found: {ticker}", file=sys.stderr)
+        return 2
+    out = Path("data") / f"{ticker}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(to_json(snapshot), encoding="utf-8")
+    meta = snapshot.meta
+    print(f"wrote {out.as_posix()} ({len(meta.fields_missing)} fields missing, {len(meta.warnings)} warnings)")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -21,5 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command is None:
         parser.print_help()
         return 0
+    if args.command == "snapshot":
+        return cmd_snapshot(args.ticker)
     print(f"{args.command}: not implemented yet (slice S1-S3)", file=sys.stderr)
     return 2

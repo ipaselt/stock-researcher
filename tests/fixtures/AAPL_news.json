@@ -1,0 +1,560 @@
+[
+ {
+  "id": "d3d65b6a-fb82-42b5-8983-e576be57db92",
+  "content": {
+   "id": "d3d65b6a-fb82-42b5-8983-e576be57db92",
+   "contentType": "STORY",
+   "title": "'So much cash': Nvidia stock jumps after largest share buyback ever",
+   "description": "",
+   "summary": "Nvidia stock popped in early trading after the AI hardware giant announced the largest share buyback in history on Monday morning and a new platform for AI safety guardrails.",
+   "pubDate": "2026-09-28T13:43:49Z",
+   "displayTime": "2026-09-28T15:34:35Z",
+   "isHosted": true,
+   "bypassModal": false,
+   "previewUrl": null,
+   "thumbnail": {
+    "originalUrl": "https://s.yimg.com/uu/api/res/1.2/sGkoOqhmti_dMTxC8PrgGA--~B/aD01MzcyO3c9ODA1ODthcHBpZD15dGFjaHlvbg--/https://d29szjachogqwa.cloudfront.net/images/2026-09/7b049ee6-4342-4286-8645-a1e40a50c83e",
+    "originalWidth": 8058,
+    "originalHeight": 5372,
+    "caption": "",
+    "resolutions": [
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/sGkoOqhmti_dMTxC8PrgGA--~B/aD01MzcyO3c9ODA1ODthcHBpZD15dGFjaHlvbg--/https://d29szjachogqwa.cloudfront.net/images/2026-09/7b049ee6-4342-4286-8645-a1e40a50c83e",
+      "width": 8058,
+      "height": 5372,
+      "tag": "original"
+     },
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/I4.1uX85ctQVdeBrS.ljGg--~B/Zmk9c3RyaW07aD0xMjg7dz0xNzA7YXBwaWQ9eXRhY2h5b24-/https://d29szjachogqwa.cloudfront.net/images/2026-09/7b049ee6-4342-4286-8645-a1e40a50c83e",
+      "width": 170,
+      "height": 128,
+      "tag": "170x128"
+     }
+    ]
+   },
+   "provider": {
+    "displayName": "Yahoo Finance",
+    "url": "http://finance.yahoo.com/",
+    "sourceId": "yahoofinance.com"
+   },
+   "canonicalUrl": {
+    "url": "https://finance.yahoo.com/markets/article/so-much-cash-nvidia-stock-jumps-after-largest-share-buyback-ever-134349202.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "clickThroughUrl": {
+    "url": "https://finance.yahoo.com/markets/article/so-much-cash-nvidia-stock-jumps-after-largest-share-buyback-ever-134349202.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "metadata": {
+    "editorsPick": true
+   },
+   "finance": {
+    "premiumFinance": {
+     "isPremiumNews": false,
+     "isPremiumFreeNews": false
+    }
+   },
+   "storyline": null
+  }
+ },
+ {
+  "id": "932d7078-0570-4d2b-9394-aae7cebbb5df",
+  "content": {
+   "id": "932d7078-0570-4d2b-9394-aae7cebbb5df",
+   "contentType": "VIDEO",
+   "title": "The impact that AI will have on advertising, according to Sir Martin Sorrell",
+   "description": "<p>Sir Martin Sorrell \u2014 the founder and executive chairman of S4Capital \u2014 sits down with Yahoo Finance Executive Editor Brian Sozzi to discuss how Meta's (<a target=\"_blank\" rel=\"\" class=\"link\" href=\"https://finance.yahoo.com/quote/META/\" data-i13n=\"slk:META;cpos:1;pos:1\">META</a>) new Muse chatbot and other AI products will impact the advertising space.</p>",
+   "summary": "Sir Martin Sorrell \u2014 the founder and executive chairman of S4Capital \u2014 sits down with Yahoo Finance Executive Editor Brian Sozzi to discuss how Meta's (META) new Muse chatbot and other AI products will impact the advertising space.",
+   "pubDate": "2026-09-28T14:40:00Z",
+   "displayTime": "",
+   "isHosted": true,
+   "bypassModal": false,
+   "previewUrl": null,
+   "thumbnail": {
+    "originalUrl": "https://s.yimg.com/uu/api/res/1.2/g39E.lHo248qLx8DX0Qa9g--~B/aD03ODY7dz0xMzk4O2FwcGlkPXl0YWNoeW9u/https://d29szjachogqwa.cloudfront.net/images/user-uploaded/video-frame-1790606459027_5039.jpg_422fba73406ae2ce0d744152851af76413af2b2e0a9707f66ad523d32aab5801.jpg",
+    "originalWidth": 1398,
+    "originalHeight": 786,
+    "caption": "",
+    "resolutions": [
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/g39E.lHo248qLx8DX0Qa9g--~B/aD03ODY7dz0xMzk4O2FwcGlkPXl0YWNoeW9u/https://d29szjachogqwa.cloudfront.net/images/user-uploaded/video-frame-1790606459027_5039.jpg_422fba73406ae2ce0d744152851af76413af2b2e0a9707f66ad523d32aab5801.jpg",
+      "width": 1398,
+      "height": 786,
+      "tag": "original"
+     },
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/mIbog17AJN8691e1qPHMRw--~B/Zmk9c3RyaW07aD0xMjg7dz0xNzA7YXBwaWQ9eXRhY2h5b24-/https://d29szjachogqwa.cloudfront.net/images/user-uploaded/video-frame-1790606459027_5039.jpg_422fba73406ae2ce0d744152851af76413af2b2e0a9707f66ad523d32aab5801.jpg",
+      "width": 170,
+      "height": 128,
+      "tag": "170x128"
+     }
+    ]
+   },
+   "provider": {
+    "displayName": "Yahoo Finance Video",
+    "url": "https://finance.yahoo.com/",
+    "sourceId": "video.yahoofinance.com"
+   },
+   "canonicalUrl": {
+    "url": "https://finance.yahoo.com/video/impact-ai-advertising-according-sir-144000439.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "clickThroughUrl": {
+    "url": "https://finance.yahoo.com/video/impact-ai-advertising-according-sir-144000439.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "metadata": {
+    "editorsPick": true
+   },
+   "finance": {
+    "premiumFinance": {
+     "isPremiumNews": false,
+     "isPremiumFreeNews": false
+    }
+   },
+   "storyline": null
+  }
+ },
+ {
+  "id": "9d354324-7049-3304-a302-132d423b0a1b",
+  "content": {
+   "id": "9d354324-7049-3304-a302-132d423b0a1b",
+   "contentType": "STORY",
+   "title": "Nvidia, Apple Partner TSMC Reveals These Clues On How To Read Charts",
+   "description": "",
+   "summary": "As TSMC stock teases a breakout, it flashes telltale indicators and provides multiple ways to view the chart action.",
+   "pubDate": "2026-09-28T16:15:10Z",
+   "displayTime": "2026-09-28T16:15:10Z",
+   "isHosted": false,
+   "bypassModal": false,
+   "previewUrl": "https://finance.yahoo.com/m/9d354324-7049-3304-a302-132d423b0a1b/nvidia-apple-partner-tsmc.html",
+   "thumbnail": {
+    "originalUrl": "https://media.zenfs.com/en/ibd.com/678710cf92412680520231416b623d2f.jpg",
+    "originalWidth": 1000,
+    "originalHeight": 563,
+    "caption": "",
+    "resolutions": [
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/3sOmohai8EmiMvYBhbun3w--~B/aD01NjM7dz0xMDAwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/ibd.com/678710cf92412680520231416b623d2f.jpg",
+      "width": 1000,
+      "height": 563,
+      "tag": "original"
+     },
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/35rxF6Sy4.I.9JOnrON8Fg--~B/Zmk9c3RyaW07aD0xMjg7dz0xNzA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/ibd.com/678710cf92412680520231416b623d2f.jpg",
+      "width": 170,
+      "height": 128,
+      "tag": "170x128"
+     }
+    ]
+   },
+   "provider": {
+    "displayName": "Investor's Business Daily",
+    "url": "http://www.investors.com/",
+    "sourceId": "ibd.com"
+   },
+   "canonicalUrl": {
+    "url": "https://www.investors.com/research/how-to-find-the-best-stocks-to-buy/tsmc-stock-nvidia-amd-apple-partner-etches-buy-points/?src=A00220&yptr=yahoo",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "clickThroughUrl": null,
+   "metadata": {
+    "editorsPick": false
+   },
+   "finance": {
+    "premiumFinance": {
+     "isPremiumNews": false,
+     "isPremiumFreeNews": false
+    }
+   },
+   "storyline": null
+  }
+ },
+ {
+  "id": "35fe632f-2598-386d-ae30-a6fed8fab9d3",
+  "content": {
+   "id": "35fe632f-2598-386d-ae30-a6fed8fab9d3",
+   "contentType": "STORY",
+   "title": "European Equities Mixed in Monday Trading; UBS Sees Multiple Merger Inquiries",
+   "description": "",
+   "summary": "European stock markets closed mixed in Monday trading, with the Stoxx 600 up 0.1%, Germany's DAX add",
+   "pubDate": "2026-09-28T15:56:01Z",
+   "displayTime": "2026-09-28T15:56:01Z",
+   "isHosted": true,
+   "bypassModal": false,
+   "previewUrl": null,
+   "thumbnail": null,
+   "provider": {
+    "displayName": "MT Newswires",
+    "url": "https://www.mtnewswires.com/",
+    "sourceId": "mt_newswires_premium_news_706"
+   },
+   "canonicalUrl": {
+    "url": "https://finance.yahoo.com/markets/stocks/articles/european-equities-mixed-monday-trading-155601811.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "clickThroughUrl": {
+    "url": "https://finance.yahoo.com/markets/stocks/articles/european-equities-mixed-monday-trading-155601811.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "metadata": {
+    "editorsPick": false
+   },
+   "finance": {
+    "premiumFinance": {
+     "isPremiumNews": true,
+     "isPremiumFreeNews": false
+    }
+   },
+   "storyline": null
+  }
+ },
+ {
+  "id": "89d67038-ef7b-3f5d-a86a-bc0658adc92f",
+  "content": {
+   "id": "89d67038-ef7b-3f5d-a86a-bc0658adc92f",
+   "contentType": "STORY",
+   "title": "Opinion: Apple\u2019s \u201cGangster Move\u201d to Boost iPhone Sales Has a Hidden Benefit Every Shareholder Will Love",
+   "description": "",
+   "summary": "Apple (AAPL) wants iPhone buyers to stop thinking in four-figure purchases and start thinking in monthly bills. On July 28, the company launched Apple Upgrade, a lease run through Klarna (KLAR) that starts at $17.",
+   "pubDate": "2026-09-28T15:52:54Z",
+   "displayTime": "2026-09-28T15:52:54Z",
+   "isHosted": true,
+   "bypassModal": false,
+   "previewUrl": null,
+   "thumbnail": {
+    "originalUrl": "https://media.zenfs.com/en/tikr_258/990ddc71910321ba4dd4c21e83195c0a",
+    "originalWidth": 1280,
+    "originalHeight": 720,
+    "caption": "Opinion: Apple\u2019s \u201cGangster Move\u201d to Boost iPhone Sales Has a Hidden Benefit Every Shareholder Will Love \u00a9 Negative Space from Pexels and Nugroho iif via Canva",
+    "resolutions": [
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/WoH0UJiLXwjVYvhkCWtRug--~B/aD03MjA7dz0xMjgwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/tikr_258/990ddc71910321ba4dd4c21e83195c0a",
+      "width": 1280,
+      "height": 720,
+      "tag": "original"
+     },
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/mlvypVyFumFWmAhn89rScA--~B/Zmk9c3RyaW07aD0xMjg7dz0xNzA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/tikr_258/990ddc71910321ba4dd4c21e83195c0a",
+      "width": 170,
+      "height": 128,
+      "tag": "170x128"
+     }
+    ]
+   },
+   "provider": {
+    "displayName": "TIKR",
+    "url": "https://www.tikr.com/",
+    "sourceId": "tikr_258"
+   },
+   "canonicalUrl": {
+    "url": "https://www.tikr.com/blog/opinion-apples-gangster-move-to-boost-iphone-sales-has-a-hidden-benefit-every-shareholder-will-love?ref=yahoofinance",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "clickThroughUrl": {
+    "url": "https://finance.yahoo.com/markets/stocks/articles/opinion-apple-gangster-move-boost-155254919.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "metadata": {
+    "editorsPick": false
+   },
+   "finance": {
+    "premiumFinance": {
+     "isPremiumNews": false,
+     "isPremiumFreeNews": false
+    }
+   },
+   "storyline": null
+  }
+ },
+ {
+  "id": "4552adf9-27f7-37d8-8ab1-dad1fc9e42c2",
+  "content": {
+   "id": "4552adf9-27f7-37d8-8ab1-dad1fc9e42c2",
+   "contentType": "STORY",
+   "title": "Nvidia Announces Largest Buyback In History. Cramer Says \u201cIt Will Change Trajectory Of The Stock\u201d If The Buyback Is Active",
+   "description": "",
+   "summary": "Jim Cramer spent months demanding a bigger buyback from Nvidia, and when the company finally delivered a record-shattering authorization, Cramer immediately placed a condition on it that could make or break the stock's direction.",
+   "pubDate": "2026-09-28T15:17:28Z",
+   "displayTime": "2026-09-28T15:17:28Z",
+   "isHosted": true,
+   "bypassModal": false,
+   "previewUrl": null,
+   "thumbnail": {
+    "originalUrl": "https://media.zenfs.com/en/24_7_wall_st__718/72882fbcc5faee22b4ae01f5081538e9.jpg",
+    "originalWidth": 1000,
+    "originalHeight": 512,
+    "caption": "",
+    "resolutions": [
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/2wMqgzCJUtc8ieWtvkLCaw--~B/aD01MTI7dz0xMDAwO2FwcGlkPXl0YWNoeW9u/https://media.zenfs.com/en/24_7_wall_st__718/72882fbcc5faee22b4ae01f5081538e9.jpg",
+      "width": 1000,
+      "height": 512,
+      "tag": "original"
+     },
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/rlqiSoKDuOxErCEZACfq5w--~B/Zmk9c3RyaW07aD0xMjg7dz0xNzA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/24_7_wall_st__718/72882fbcc5faee22b4ae01f5081538e9.jpg",
+      "width": 170,
+      "height": 128,
+      "tag": "170x128"
+     }
+    ]
+   },
+   "provider": {
+    "displayName": "24/7 Wall St.",
+    "url": "https://247wallst.com/",
+    "sourceId": "24_7_wall_st__718"
+   },
+   "canonicalUrl": {
+    "url": "https://247wallst.com/investing/2026/09/28/nvidia-announces-largest-buyback-in-history-cramer-says-it-will-change-trajectory-of-the-stock-if-the-buyback-is-active/",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "clickThroughUrl": {
+    "url": "https://finance.yahoo.com/markets/stocks/articles/nvidia-announces-largest-buyback-history-151728562.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "metadata": {
+    "editorsPick": false
+   },
+   "finance": {
+    "premiumFinance": {
+     "isPremiumNews": false,
+     "isPremiumFreeNews": false
+    }
+   },
+   "storyline": null
+  }
+ },
+ {
+  "id": "7bcda23e-4ef4-3c89-bd75-be83fcf86357",
+  "content": {
+   "id": "7bcda23e-4ef4-3c89-bd75-be83fcf86357",
+   "contentType": "STORY",
+   "title": "Burford Capital shares gain on $5.7B Apple patent verdict",
+   "description": "",
+   "summary": "Investing.com -- Burford Capital Ltd. rose over 12% on Monday, marking its largest intraday gain since late March, following a federal jury verdict in a patent case involving Apple Inc.",
+   "pubDate": "2026-09-28T15:16:16Z",
+   "displayTime": "2026-09-28T15:16:16Z",
+   "isHosted": true,
+   "bypassModal": false,
+   "previewUrl": null,
+   "thumbnail": null,
+   "provider": {
+    "displayName": "Investing.com",
+    "url": "https://www.investing.com/",
+    "sourceId": "investing_com_631"
+   },
+   "canonicalUrl": {
+    "url": "https://finance.yahoo.com/markets/stocks/articles/burford-capital-shares-gain-5-151616079.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "clickThroughUrl": {
+    "url": "https://finance.yahoo.com/markets/stocks/articles/burford-capital-shares-gain-5-151616079.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "metadata": {
+    "editorsPick": false
+   },
+   "finance": {
+    "premiumFinance": {
+     "isPremiumNews": false,
+     "isPremiumFreeNews": false
+    }
+   },
+   "storyline": null
+  }
+ },
+ {
+  "id": "32b9e704-0c28-3aab-8722-98c63961c35d",
+  "content": {
+   "id": "32b9e704-0c28-3aab-8722-98c63961c35d",
+   "contentType": "STORY",
+   "title": "OpenAI DevDay 2026 \u2014 The Agent Platform Race Arrives at OpenAI\u2019s Doorstep",
+   "description": "",
+   "summary": "As the industry gathers at Fort Mason in San Francisco for OpenAI DevDay 2026, the focus is on whether the company will pivot its core strategy. When Sam Altman takes the stage at 10am PT on September 29, he faces a market that has fundamentally shifted. The era of the general-purpose API is receding, replaced [\u2026]",
+   "pubDate": "2026-09-28T14:47:54Z",
+   "displayTime": "2026-09-28T14:47:54Z",
+   "isHosted": true,
+   "bypassModal": false,
+   "previewUrl": null,
+   "thumbnail": null,
+   "provider": {
+    "displayName": "Forkast News",
+    "url": "https://forkast.news/",
+    "sourceId": "forkast_news_articles_672"
+   },
+   "canonicalUrl": {
+    "url": "https://finance.yahoo.com/technology/ai/articles/openai-devday-2026-agent-platform-144754557.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "clickThroughUrl": {
+    "url": "https://finance.yahoo.com/technology/ai/articles/openai-devday-2026-agent-platform-144754557.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "metadata": {
+    "editorsPick": false
+   },
+   "finance": {
+    "premiumFinance": {
+     "isPremiumNews": false,
+     "isPremiumFreeNews": false
+    }
+   },
+   "storyline": null
+  }
+ },
+ {
+  "id": "75e6112a-6be7-3c0e-b6cf-9efd1f9e4030",
+  "content": {
+   "id": "75e6112a-6be7-3c0e-b6cf-9efd1f9e4030",
+   "contentType": "STORY",
+   "title": "Apple at $341: Above Consensus But Still It May Be Re-Rating Bound Due to Its Balance Sheet",
+   "description": "",
+   "summary": "Apple keeps climbing past what analysts expect, yet its consensus target now sits below the current price, and a $63 billion net cash cushion may be forcing the entire valuation conversation to start over.",
+   "pubDate": "2026-09-28T14:17:49Z",
+   "displayTime": "2026-09-28T14:17:49Z",
+   "isHosted": true,
+   "bypassModal": false,
+   "previewUrl": null,
+   "thumbnail": {
+    "originalUrl": "https://media.zenfs.com/en/24_7_wall_st__718/2e25736410fb6986016218763e38ba6f.jpg",
+    "originalWidth": 2844,
+    "originalHeight": 1600,
+    "caption": "",
+    "resolutions": [
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/5ZbDFqgtqn.6yvuafv62bA--~B/aD0xNjAwO3c9Mjg0NDthcHBpZD15dGFjaHlvbg--/https://media.zenfs.com/en/24_7_wall_st__718/2e25736410fb6986016218763e38ba6f.jpg",
+      "width": 2844,
+      "height": 1600,
+      "tag": "original"
+     },
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/3P.652n4TslDjyYbW5Hu2Q--~B/Zmk9c3RyaW07aD0xMjg7dz0xNzA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/24_7_wall_st__718/2e25736410fb6986016218763e38ba6f.jpg",
+      "width": 170,
+      "height": 128,
+      "tag": "170x128"
+     }
+    ]
+   },
+   "provider": {
+    "displayName": "24/7 Wall St.",
+    "url": "https://247wallst.com/",
+    "sourceId": "24_7_wall_st__718"
+   },
+   "canonicalUrl": {
+    "url": "https://247wallst.com/investing/2026/09/28/apple-at-341-above-consensus-but-still-it-may-be-re-rating-bound-due-to-its-balance-sheet/",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "clickThroughUrl": {
+    "url": "https://finance.yahoo.com/markets/stocks/articles/apple-341-above-consensus-still-141749344.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "metadata": {
+    "editorsPick": false
+   },
+   "finance": {
+    "premiumFinance": {
+     "isPremiumNews": false,
+     "isPremiumFreeNews": false
+    }
+   },
+   "storyline": null
+  }
+ },
+ {
+  "id": "af9ece8e-ee6b-3908-aa4f-bf88c17f1369",
+  "content": {
+   "id": "af9ece8e-ee6b-3908-aa4f-bf88c17f1369",
+   "contentType": "STORY",
+   "title": "Could $1,000 in Apple Become $2,000 by 2031?",
+   "description": "",
+   "summary": "Apple shares have surged over 33% in the past year, but the real question is whether that momentum carries far enough to turn a modest stake into something worth celebrating six years from now. The answer depends on which of three very different futures plays out.",
+   "pubDate": "2026-09-28T14:00:49Z",
+   "displayTime": "2026-09-28T14:00:49Z",
+   "isHosted": true,
+   "bypassModal": false,
+   "previewUrl": null,
+   "thumbnail": {
+    "originalUrl": "https://media.zenfs.com/en/24_7_wall_st__718/a7838b9c8e1d9c9bd99bdd138295e0e2.jpg",
+    "originalWidth": 2560,
+    "originalHeight": 1700,
+    "caption": "",
+    "resolutions": [
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/ZkqIZHJ45_luN3LcRaqQCg--~B/aD0xNzAwO3c9MjU2MDthcHBpZD15dGFjaHlvbg--/https://media.zenfs.com/en/24_7_wall_st__718/a7838b9c8e1d9c9bd99bdd138295e0e2.jpg",
+      "width": 2560,
+      "height": 1700,
+      "tag": "original"
+     },
+     {
+      "url": "https://s.yimg.com/uu/api/res/1.2/Ez7Vth7uTV3j8oixjvbcvw--~B/Zmk9c3RyaW07aD0xMjg7dz0xNzA7YXBwaWQ9eXRhY2h5b24-/https://media.zenfs.com/en/24_7_wall_st__718/a7838b9c8e1d9c9bd99bdd138295e0e2.jpg",
+      "width": 170,
+      "height": 128,
+      "tag": "170x128"
+     }
+    ]
+   },
+   "provider": {
+    "displayName": "24/7 Wall St.",
+    "url": "https://247wallst.com/",
+    "sourceId": "24_7_wall_st__718"
+   },
+   "canonicalUrl": {
+    "url": "https://247wallst.com/investing/2026/09/28/could-1000-in-apple-become-2000-by-2031/",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "clickThroughUrl": {
+    "url": "https://finance.yahoo.com/markets/stocks/articles/could-1-000-apple-become-140049881.html",
+    "site": "finance",
+    "region": "US",
+    "lang": "en-US"
+   },
+   "metadata": {
+    "editorsPick": false
+   },
+   "finance": {
+    "premiumFinance": {
+     "isPremiumNews": false,
+     "isPremiumFreeNews": false
+    }
+   },
+   "storyline": null
+  }
+ }
+]
