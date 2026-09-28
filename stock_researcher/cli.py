@@ -9,12 +9,17 @@ from .snapshot import build_snapshot, to_json
 
 TICKER_COMMANDS = ["run", "snapshot", "score", "assemble", "verify-citations"]
 TICKER_RE = re.compile(r"^[A-Z][A-Z.\-]{0,5}$")
+# Windows device names: data/CON.json would resolve to the console, not a file.
+RESERVED_NAMES = {"CON", "PRN", "AUX", "NUL"} | {f"{p}{n}" for p in ("COM", "LPT") for n in range(1, 10)}
 
 
 def cmd_snapshot(ticker: str) -> int:
     ticker = ticker.upper()
-    if not TICKER_RE.match(ticker):
+    if not TICKER_RE.fullmatch(ticker):
         print(f"invalid ticker {ticker!r}", file=sys.stderr)
+        return 2
+    if ticker.split(".")[0] in RESERVED_NAMES:
+        print(f"ticker {ticker!r} is a reserved Windows device name and cannot be written to data/", file=sys.stderr)
         return 2
     try:
         snapshot = build_snapshot(get_provider(), ticker)

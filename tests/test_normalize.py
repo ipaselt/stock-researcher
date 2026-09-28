@@ -10,6 +10,18 @@ def test_every_field_has_a_valid_unit_and_target():
         assert group and field
 
 
+def test_only_dividend_yield_and_debt_to_equity_are_percents():
+    assert {key for key, _, unit in FIELDS if unit == "pct"} == {"dividendYield", "debtToEquity"}
+
+
+@pytest.mark.parametrize("key, target", [(k, t) for k, t, u in FIELDS if u in ("frac", "raw")])
+def test_frac_and_raw_pass_through(key, target):
+    groups, warnings = normalize({key: 0.46})
+    group, field = target.split(".")
+    assert groups[group][field] == 0.46
+    assert warnings == []
+
+
 def test_dividend_yield_is_a_percent():
     groups, _ = normalize({"dividendYield": 0.32})
     assert groups["dividend"]["dividend_yield"] == pytest.approx(0.0032)
@@ -25,18 +37,15 @@ def test_fraction_passes_through():
     assert groups["profitability"]["gross_margin"] == 0.46
 
 
-def test_missing_and_none_keys_are_tracked():
-    groups, missing = normalize({"grossMargins": 0.46, "beta": None})
-    assert "beta" in missing and "trailingPE" in missing
-    assert "grossMargins" not in missing
-    assert set(missing) == {key for key, _, _ in FIELDS} - {"grossMargins"}
+def test_none_and_absent_keys_are_left_out():
+    groups, _ = normalize({"grossMargins": 0.46, "beta": None})
+    assert groups == {"profitability": {"gross_margin": 0.46}}
 
 
 def test_fallback_key_fills_the_same_field():
-    groups, missing = normalize({"regularMarketPrice": 10.0, "trailingPegRatio": 1.5})
+    groups, _ = normalize({"regularMarketPrice": 10.0, "trailingPegRatio": 1.5})
     assert groups["meta"]["price"] == 10.0
     assert groups["valuation"]["peg"] == 1.5
-    assert "currentPrice" in missing and "pegRatio" in missing
 
 
 def test_primary_key_wins_over_fallback():
@@ -45,15 +54,14 @@ def test_primary_key_wins_over_fallback():
 
 
 def test_unusable_numbers_become_missing_with_a_warning():
-    groups, missing = normalize({"trailingPE": "Infinity", "forwardPE": float("nan")})
-    assert "trailingPE" in missing and "forwardPE" in missing
-    assert "trailing_pe" not in groups.get("valuation", {})
-    assert any("trailingPE" in w for w in groups["meta"]["warnings"])
+    groups, warnings = normalize({"trailingPE": "Infinity", "forwardPE": float("nan")})
+    assert "valuation" not in groups
+    assert any("trailingPE" in w for w in warnings)
 
 
 def test_no_warnings_for_sane_values():
-    groups, _ = normalize({"dividendYield": 0.32, "debtToEquity": 78.4, "grossMargins": 0.46, "forwardPE": 30.0})
-    assert groups["meta"]["warnings"] == []
+    _, warnings = normalize({"dividendYield": 0.32, "debtToEquity": 78.4, "grossMargins": 0.46, "forwardPE": 30.0})
+    assert warnings == []
 
 
 @pytest.mark.parametrize(
@@ -67,8 +75,8 @@ def test_no_warnings_for_sane_values():
     ],
 )
 def test_sanity_warnings(info, needle):
-    groups, _ = normalize(info)
-    assert any(needle in w for w in groups["meta"]["warnings"])
+    _, warnings = normalize(info)
+    assert any(needle in w for w in warnings)
 
 
 def test_strings_pass_through():
@@ -85,6 +93,8 @@ def test_news_items_flatten_and_skip_malformed():
         "junk",
         {"content": {"summary": "no title"}},
         {"content": {"title": "B"}},
+        {"content": {"title": "x", "canonicalUrl": "https://a"}},
+        {"content": {"title": "y", "provider": "P"}},
     ]
     items = news_items(raw)
     assert items == [

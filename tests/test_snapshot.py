@@ -3,8 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from stock_researcher.normalize import FIELDS
-from stock_researcher.snapshot import Snapshot, build_snapshot, from_json, safe_div, to_json
+from stock_researcher.snapshot import Snapshot, build_snapshot, fields_missing, from_json, safe_div, to_json
 
 FIXTURES = Path(__file__).parent / "fixtures"
 AS_OF = "2026-09-28"
@@ -40,9 +39,48 @@ def test_aapl_core_fields(aapl):
     assert aapl.meta.warnings == []
 
 
-def test_aapl_fields_missing_is_exactly_the_none_keys(aapl):
+def test_aapl_fields_missing_lists_the_empty_snapshot_fields(aapl):
+    # The latest annual Interest Expense is NaN in the fixture, so coverage is the one numeric gap.
+    assert aapl.meta.fields_missing == ["health.interest_coverage"]
+
+
+def test_fields_missing_ignores_unused_fallback_keys(fake_provider, monkeypatch):
     info = _info("AAPL")
-    assert aapl.meta.fields_missing == [key for key, _, _ in FIELDS if info.get(key) is None]
+    del info["regularMarketPrice"], info["trailingPegRatio"]
+    monkeypatch.setattr(fake_provider, "fetch_info", lambda ticker: info)
+    snap = build_snapshot(fake_provider, "AAPL", as_of=AS_OF)
+    assert snap.meta.price == info["currentPrice"]
+    assert snap.meta.fields_missing == ["health.interest_coverage"]
+
+
+def test_fields_missing_on_empty_snapshot():
+    missing = fields_missing(Snapshot())
+    assert "meta.price" in missing and "technical.rsi_14" in missing
+    assert "meta.name" not in missing and "technical.golden_cross" not in missing  # not float fields
+
+
+def test_aapl_hand_computed_derived_values(aapl):
+    # Literals copied from tests/fixtures/AAPL_* (info, income_stmt, history).
+    price = 341.655
+    assert aapl.meta.price == price
+    assert aapl.profitability.revenue_ttm == 466822987776
+    assert aapl.profitability.fcf_margin == pytest.approx(107721875456 / 466822987776)  # 0.2308: TTM over TTM
+    assert aapl.health.interest_coverage is None  # latest Interest Expense is NaN in the fixture
+    assert aapl.health.cash_to_debt == pytest.approx(62399000576 / 84343996416)
+    assert aapl.technical.price_vs_sma200 == pytest.approx(price / 287.71401465 - 1)  # mean of last 200 closes
+    assert aapl.technical.pct_from_52w_high == pytest.approx(price / 345.34 - 1)
+    span = 1096 / 365.25  # 2022-09-30 to 2025-09-30
+    assert aapl.growth.revenue_cagr_3y == pytest.approx((416161e6 / 394328e6) ** (1 / span) - 1)
+
+
+def test_fcf_margin_falls_back_to_last_fiscal_year_revenue(fake_provider, monkeypatch):
+    info = _info("AAPL")
+    del info["totalRevenue"]
+    monkeypatch.setattr(fake_provider, "fetch_info", lambda ticker: info)
+    snap = build_snapshot(fake_provider, "AAPL", as_of=AS_OF)
+    assert snap.profitability.revenue_ttm is None
+    assert snap.profitability.fcf_margin == pytest.approx(107721875456 / 416161e6)
+    assert "profitability.revenue_ttm" in snap.meta.fields_missing
 
 
 def test_aapl_derived_from_history_and_income(aapl):
@@ -58,7 +96,6 @@ def test_aapl_derived_from_history_and_income(aapl):
     assert tech.golden_cross == (tech.sma_50 > tech.sma_200)
     assert tech.price_vs_sma50 == pytest.approx(aapl.meta.price / tech.sma_50 - 1)
     assert growth.revenue_cagr_3y is not None and growth.eps_cagr_3y is not None
-    assert growth.revenue_cagr_5y is None  # yfinance gives 5 annual columns: a 4-year span at most
     assert aapl.profitability.fcf_margin is not None
     assert aapl.events.next_earnings_date == "2026-10-29"
     assert 0 < len(aapl.events.news) <= 10
@@ -91,7 +128,8 @@ def test_sparse_otc_company(fake_provider):
     snap = build_snapshot(fake_provider, "HCMC", as_of=AS_OF)
     assert snap.meta.price is not None
     assert len(snap.meta.fields_missing) >= 10
-    assert "trailingPE" in snap.meta.fields_missing  # Yahoo sent the string "Infinity"
+    assert "valuation.trailing_pe" in snap.meta.fields_missing  # Yahoo sent the string "Infinity"
+    assert any("trailingPE" in w for w in snap.meta.warnings)
     assert snap.valuation.trailing_pe is None
     assert snap.events.news == [] and snap.events.next_earnings_date is None
     assert snap.analyst.target_mean is None

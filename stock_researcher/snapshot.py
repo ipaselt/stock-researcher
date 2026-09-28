@@ -51,7 +51,6 @@ class Growth:
     earnings_growth_yoy: float | None = None
     earnings_quarterly_growth: float | None = None
     revenue_cagr_3y: float | None = None
-    revenue_cagr_5y: float | None = None
     eps_cagr_3y: float | None = None
     net_income_cagr_3y: float | None = None
 
@@ -63,6 +62,7 @@ class Profitability:
     net_margin: float | None = None
     roe: float | None = None
     roa: float | None = None
+    revenue_ttm: float | None = None
     fcf_margin: float | None = None
 
 
@@ -213,6 +213,17 @@ def _last(series: pd.Series) -> float | None:
     return _num(series.iloc[-1]) if not series.empty else None
 
 
+def fields_missing(snapshot: Snapshot) -> list[str]:
+    """`group.field` paths of every numeric field that is None."""
+    missing = []
+    for group in dataclasses.fields(snapshot):
+        section = getattr(snapshot, group.name)
+        for f in dataclasses.fields(section):
+            if f.type == float | None and getattr(section, f.name) is None:
+                missing.append(f"{group.name}.{f.name}")
+    return missing
+
+
 def build_snapshot(provider, ticker: str, as_of: str | None = None) -> Snapshot:
     """Fetch everything for `ticker` (plus SPY history) and assemble a Snapshot."""
     info = provider.fetch_info(ticker)
@@ -226,7 +237,7 @@ def build_snapshot(provider, ticker: str, as_of: str | None = None) -> Snapshot:
     earnings_dates = provider.fetch_earnings_dates(ticker) or []
     as_of = as_of or dt.date.today().isoformat()
 
-    groups, missing = normalize(info)
+    groups, warnings = normalize(info)
     meta = groups.setdefault("meta", {})
     val = groups.setdefault("valuation", {})
     gro = groups.setdefault("growth", {})
@@ -236,9 +247,9 @@ def build_snapshot(provider, ticker: str, as_of: str | None = None) -> Snapshot:
     ana = groups.setdefault("analyst", {})
     tech = groups.setdefault("technical", {})
 
-    meta.update(ticker=ticker, as_of=as_of, provider=getattr(provider, "name", None), fields_missing=missing)
+    meta.update(ticker=ticker, as_of=as_of, provider=getattr(provider, "name", None), warnings=warnings)
     if close.empty:
-        meta["warnings"].append("no price history")
+        warnings.append("no price history")
     price = meta.get("price")
 
     # valuation
@@ -249,12 +260,15 @@ def build_snapshot(provider, ticker: str, as_of: str | None = None) -> Snapshot:
 
     # growth (annual income statement)
     gro["revenue_cagr_3y"] = _income_cagr(income, INCOME_ROWS["revenue"], 3)
-    gro["revenue_cagr_5y"] = _income_cagr(income, INCOME_ROWS["revenue"], 5)
     gro["eps_cagr_3y"] = _income_cagr(income, INCOME_ROWS["eps"], 3)
     gro["net_income_cagr_3y"] = _income_cagr(income, INCOME_ROWS["net_income"], 3)
 
     # profitability / health
-    prof["fcf_margin"] = safe_div(hea.get("free_cashflow"), _income_value(income, INCOME_ROWS["revenue"]))
+    # freeCashflow is trailing-twelve-month: divide by TTM revenue; the last fiscal year is only a fallback.
+    revenue = prof.get("revenue_ttm")
+    if revenue is None:
+        revenue = _income_value(income, INCOME_ROWS["revenue"])
+    prof["fcf_margin"] = safe_div(hea.get("free_cashflow"), revenue)
     interest = _income_value(income, INCOME_ROWS["interest_expense"])
     ebit = _income_value(income, INCOME_ROWS["ebit"])
     hea["interest_coverage"] = safe_div(ebit, None if interest is None else abs(interest))
@@ -293,7 +307,9 @@ def build_snapshot(provider, ticker: str, as_of: str | None = None) -> Snapshot:
     upcoming = sorted(d for d in earnings_dates if d >= as_of)
     groups["events"] = {"next_earnings_date": upcoming[0] if upcoming else None, "news": news_items(raw_news, 10)}
 
-    return Snapshot(**{name: cls(**groups.get(name, {})) for name, cls in GROUPS.items()})
+    snapshot = Snapshot(**{name: cls(**groups.get(name, {})) for name, cls in GROUPS.items()})
+    snapshot.meta.fields_missing = fields_missing(snapshot)
+    return snapshot
 
 
 def to_json(snapshot: Snapshot) -> str:

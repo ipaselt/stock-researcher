@@ -7,7 +7,7 @@ Every stored ratio is a fraction or a multiple, never a percent. Each info key c
   usd  — a dollar amount
   str  — text
 Several keys may target the same field: the first non-missing one wins (e.g. currentPrice, then
-regularMarketPrice). Every info key that is None/absent/unusable is reported in fields_missing.
+regularMarketPrice). Which Snapshot fields end up empty is decided after assembly (snapshot.fields_missing).
 """
 import math
 
@@ -45,6 +45,7 @@ FIELDS: list[tuple[str, str, str]] = [
     ("profitMargins", "profitability.net_margin", "frac"),
     ("returnOnEquity", "profitability.roe", "frac"),
     ("returnOnAssets", "profitability.roa", "frac"),
+    ("totalRevenue", "profitability.revenue_ttm", "usd"),
     # health
     ("debtToEquity", "health.debt_to_equity", "pct"),
     ("currentRatio", "health.current_ratio", "raw"),
@@ -95,12 +96,8 @@ def _number(value) -> float | None:
 
 
 def normalize(info: dict) -> tuple[dict, list[str]]:
-    """Map a raw info dict to {group: {field: value}} plus the info keys that were missing.
-
-    Sanity warnings are returned under the "warnings" key of the "meta" group; they never raise.
-    """
+    """Map a raw info dict to {group: {field: value}} plus sanity warnings (appended, never raised)."""
     out: dict[str, dict] = {}
-    missing: list[str] = []
     warnings: list[str] = []
     for key, target, unit in FIELDS:
         raw = info.get(key)
@@ -115,7 +112,6 @@ def normalize(info: dict) -> tuple[dict, list[str]]:
             if value is not None and unit == "frac" and abs(value) > 5:
                 warnings.append(f"{key} = {value} looks like a percent, not a fraction")
         if value is None:
-            missing.append(key)
             continue
         group, field = target.split(".")
         out.setdefault(group, {}).setdefault(field, value)
@@ -129,8 +125,7 @@ def normalize(info: dict) -> tuple[dict, list[str]]:
     forward_pe = out.get("valuation", {}).get("forward_pe")
     if forward_pe is not None and forward_pe < 0:
         warnings.append("forward_pe < 0: negative forward earnings")
-    out.setdefault("meta", {})["warnings"] = warnings
-    return out, missing
+    return out, warnings
 
 
 def news_items(raw_items: list, limit: int = 10) -> list[dict]:
@@ -140,13 +135,15 @@ def news_items(raw_items: list, limit: int = 10) -> list[dict]:
         content = raw.get("content") if isinstance(raw, dict) else None
         if not isinstance(content, dict) or not content.get("title"):
             continue
-        url = (content.get("canonicalUrl") or {}).get("url") or (content.get("clickThroughUrl") or {}).get("url")
+        canonical, click, provider = (content.get(k) or {} for k in ("canonicalUrl", "clickThroughUrl", "provider"))
+        if not all(isinstance(part, dict) for part in (canonical, click, provider)):
+            continue
         items.append(
             {
                 "title": content["title"],
                 "summary": content.get("summary") or "",
-                "url": url,
-                "provider": (content.get("provider") or {}).get("displayName"),
+                "url": canonical.get("url") or click.get("url"),
+                "provider": provider.get("displayName"),
                 "published": content.get("pubDate"),
             }
         )
