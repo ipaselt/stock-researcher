@@ -2,6 +2,11 @@
 
 *(The planner moves merged tasks here from `../planning/progress.md`.)*
 
+- ✅ **#3** S3 Output — 2026-09-28, PR #3 merged (c164079). `report.py` (12-section skeleton, slot markers,
+  `assemble` with verdict validation and the override protocol), `ledger.py` (ratings.csv rebuilt from report
+  front-matter), CLI `run` / `assemble --date` / `ledger`, docs (scorecard, fair-value, labels, README) with
+  `test_docs.py` pinning every edge/weight/constant. 453 tests. Review MAJOR (stale agent files reused on
+  rerun) fixed: `run` clears `data/<T>/*.md`, `assemble` ignores files older than the skeleton.
 - ✅ **#2** S2 Scoring — 2026-09-28, PR #2 merged (31cc8b6). One METRICS table (18 metrics, 5 categories,
   weights 30/20/20/20/10), one `grade()`, documented special cases; fair value = forward EPS × median
   fiscal-year P/E (≥3 years, else sector default), ±15% band, tiered margin of safety, near-zero-EPS floor;
