@@ -1,0 +1,6 @@
+This project is ORCHESTRATED: production code on `main` is built only from PR merges, never
+direct commits. The presence of this file activates the global main-protection hook
+(~/.claude/hooks/main-protection.sh), which denies non-`.md` commits while on the default branch.
+Brain docs (`*.md`) are exempt — the planning session commits those to main directly.
+
+Remove this file to opt out of merge-only main.
