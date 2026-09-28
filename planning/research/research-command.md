@@ -38,6 +38,8 @@ skip the citation check; do not write more than the verdict file yourself.
 6. **Bear case (optional).** If the suggested label is BUY or the owner asked for it, dispatch `bear-case` with the
    snapshot path, the absolute path of `data/T.score.json`, the suggested label + rule id, and the five agent
    files; wait.
+   Then re-run `.venv/Scripts/python.exe -m stock_researcher verify-citations T` and apply step 5's re-dispatch-or-drop
+   rule to `bear-case` (the check covers every agent file present, so the earlier five are re-confirmed too).
 7. **Verdict.** Read the five (six) agent files' `### Assessment` paragraphs and JSON blocks — nothing more. Write
    `data/T/verdict.md`:
    ```
