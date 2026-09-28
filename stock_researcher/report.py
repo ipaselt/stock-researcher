@@ -166,6 +166,32 @@ def _scorecard(score) -> str:
     return "\n".join(out) + "\n"
 
 
+def score_table(score, fv, label) -> str:
+    """The scorecard as fixed-width plain text (`score --table`): one row per metric, a line per category,
+    then the fair value and the suggested label. Values are formatted as in the report."""
+    rows = [("category", "metric", "value", "grade", "pts", "wt", "note")]
+    for r in score.metrics:
+        rows.append((r.category, r.field, fmt_value(r.field, r.value), r.grade or "—",
+                     "—" if r.points is None else f"{r.points:g}", str(r.weight), r.note or ""))
+    widths = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
+    rows.insert(1, tuple("-" * w for w in widths))
+    lines = ["  ".join(cell.ljust(w) for cell, w in zip(row, widths)).rstrip() for row in rows]
+    lines.append("")
+    for name, c in score.categories.items():
+        sub = "—" if c.score is None else f"{c.score:.1f}"
+        lines.append(f"{name:<13} weight {CATEGORY_WEIGHTS[name]:>2}  score {sub:>5}  coverage {c.coverage:.0%}")
+    lines.append("")
+    if fv.fair_value is None:
+        lines.append(f"fair value —: {fv.reason} (fair P/E {fv.fair_pe:.1f}x)")
+    else:
+        lines.append(f"fair value {fmt_money(fv.fair_value)} (band {fmt_money(fv.band_low)} – "
+                     f"{fmt_money(fv.band_high)}), fair P/E {fv.fair_pe:.1f}x ({fv.fair_pe_source.replace('_', ' ')}, "
+                     f"{fv.n_years}y), margin of safety {fv.margin_of_safety:.0%}, entry {fmt_money(fv.entry_price)}, "
+                     f"upside {fmt_pct(fv.upside)}")
+    lines.append(f"label {label.label} ({label.rule_id}): {label.reason}")
+    return "\n".join(lines)
+
+
 def _mos_why(total: float | None) -> str:
     if total is None:
         return "no score, so the default tier applies"

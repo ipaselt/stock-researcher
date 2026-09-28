@@ -94,12 +94,14 @@ def cmd_snapshot(ticker: str) -> int:
     return 0 if ticker and _write_snapshot(ticker) else 2
 
 
-def cmd_score(ticker: str) -> int:
+def cmd_score(ticker: str, table: bool = False) -> int:
     ticker = _checked(ticker)
     snapshot = ticker and _load_snapshot(ticker)
     if not snapshot:
         return 2
-    _write_score(ticker, snapshot)
+    score, fv, label = _write_score(ticker, snapshot)
+    if table:
+        print(report.score_table(score, fv, label))
     return 0
 
 
@@ -185,6 +187,8 @@ def main(argv: list[str] | None = None) -> int:
         cmd.add_argument("ticker")
         if name == "assemble":
             cmd.add_argument("--date", help="report date YYYY-MM-DD (default: today)")
+        if name == "score":
+            cmd.add_argument("--table", action="store_true", help="also print the scorecard as a table")
         if name == "run":
             cmd.add_argument("--offline", action="store_true", help="reuse today's data/<T>.json instead of fetching")
     sub.add_parser("ledger")
@@ -199,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "snapshot":
         return cmd_snapshot(args.ticker)
     if args.command == "score":
-        return cmd_score(args.ticker)
+        return cmd_score(args.ticker, args.table)
     if args.command == "run":
         return cmd_run(args.ticker, args.offline)
     if args.command == "assemble":

@@ -1,8 +1,10 @@
 import json
+import re
 
 import pytest
 
 from stock_researcher import cli
+from stock_researcher.scorecard import CATEGORY_WEIGHTS, METRICS
 
 
 @pytest.fixture
@@ -81,6 +83,25 @@ def test_score_end_to_end(tmp_cwd, fake_cli_provider, capsys):
         f"AAPL: score {data['total']:.1f} ({data['band_word']}), coverage 94%, "
         f"label {label['label']} ({label['rule_id']}), entry {entry}"
     )
+
+
+def test_score_table(tmp_cwd, fake_cli_provider, capsys):
+    assert cli.main(["snapshot", "AAPL"]) == 0
+    capsys.readouterr()
+    assert cli.main(["score", "AAPL", "--table"]) == 0
+    summary, *table = capsys.readouterr().out.splitlines()
+    assert summary == "AAPL: score 60.1 (good), coverage 94%, label HAS RUN (L7), entry 250.80"  # unchanged
+    text = "\n".join(table)
+    assert table[0].split() == ["category", "metric", "value", "grade", "pts", "wt", "note"]
+    for metric in METRICS:
+        assert re.search(rf"^{metric.category}\s+{re.escape(metric.field)}\s", text, re.MULTILINE), metric.field
+    for name, weight in CATEGORY_WEIGHTS.items():
+        assert re.search(rf"^{name}\s+weight\s+{weight}\s+score\s", text, re.MULTILINE), name
+    assert re.search(r"^health\s+health\.interest_coverage\s+—\s+—\s+—\s+6\s+no reported interest expense$",
+                     text, re.MULTILINE)
+    assert "x " in text and "%" in text  # multiples and fractions formatted as in the report
+    assert table[-2].startswith("fair value $295.06 (band $250.80 – $339.32)")
+    assert table[-1].startswith("label HAS RUN (L7): ")
 
 
 def test_score_sparse_ticker_is_not_looking(tmp_cwd, fake_cli_provider, capsys):

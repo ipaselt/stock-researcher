@@ -310,7 +310,7 @@ def test_prose_passes_v11(prose):
     ("from 99.0x to 34.0x (valuation.fiscal_year_pe)",
      "a: valuation.fiscal_year_pe cited 99.0x vs 34x, 22.2x in snapshot"),        # not only the last number
     ("FCF 23.1% and yield 9.9% (profitability.fcf_margin, valuation.fcf_yield)",
-     "a: 9.9% matches none of profitability.fcf_margin (23.08%); valuation.fcf_yield (2.17%)"),
+     "a: valuation.fcf_yield cited 9.9% vs 2.17% in snapshot"),                     # number i <-> key i
     ("RSI of 66.2 is not overbought.", 'a: uncited number 66.2 in: "RSI of 66.2 is not overbought."'),
     ("margin 23.1% (profitability.fcf_margin), up 4.0% on the year",
      'a: uncited number 4.0% in: "margin 23.1% (profitability.fcf_margin), up 4.0% on the year"'),
@@ -356,3 +356,69 @@ def test_assemble_tolerates_wrong_shape_citations_json(tmp_cwd, run_dir, content
     (run_dir / "citations.json").write_text(content, encoding="utf-8")
     text = appendix(tmp_cwd)
     assert "citation check: not run" in text and "- unreadable citations.json ignored" in text
+
+
+# --- S6 follow-ups: version numbers, plain integers, ordered multi-key windows, ranges, NOISE_RE -----------
+
+S6 = {"snapshot": {**SRC["snapshot"], "analyst": {"target_low": 215.0, "target_high": 405.0},
+                   "valuation": {**SRC["snapshot"]["valuation"], "peg": 2.74, "ev_ebitda": 29.767}},
+      "score": SRC["score"]}
+
+
+@pytest.mark.parametrize("prose", [
+    "It ships with iOS 26.1 and macOS 26.1 this fall.",               # decimal version numbers, uncited
+    "The app moved to Version 2.0 and then v2.0.1 in the fall.",
+    "the iOS 26.1 cycle lifted margin to 23.1% (profitability.fcf_margin)",  # skipped inside a window too
+    "41 analysts cover it.",                                          # an honest uncited integer
+    "targets span 215.0 to 405.0 (analyst.target_low, analyst.target_high)",
+    "PEG of 2.74 (valuation.peg, valuation.ev_ebitda)",               # one number, the first key
+    "a 22-34x range (valuation.fiscal_year_pe)",                      # both bounds in the list
+    "margin rose to 23.1 percent (profitability.fcf_margin)",
+    "FCF margin 23 pct (profitability.fcf_margin)",
+])
+def test_prose_passes_s6(prose):
+    assert check_prose("a", prose, S6) == []
+
+
+@pytest.mark.parametrize("prose, failure", [
+    ("RSI 66.2 is high.", 'a: uncited number 66.2 in: "RSI 66.2 is high."'),      # metric word, not a version
+    ("the EPS 9.59 print was fine.", 'a: uncited number 9.59 in: "the EPS 9.59 print was fine."'),
+    ("Version 2.0 shipped.", 'a: uncited number 2.0 in: "Version 2.0 shipped."'),  # sentence start: a claim
+    ("RSI is 86, overbought.", 'a: uncited number 86 in: "RSI is 86, overbought."'),
+    ("at 86 RSI it is stretched.", 'a: uncited number 86 in: "at 86 RSI it is stretched."'),
+    ("shares fell 7 percent.", 'a: uncited number 7% in: "shares fell 7 percent."'),
+    ("targets span 405.0 to 215.0 (analyst.target_low, analyst.target_high)",
+     "a: analyst.target_low cited 405.0 vs 215 in snapshot "
+     "(it matches analyst.target_high, but numbers pair with keys in order)"),
+    ("PEG of 29.8 (valuation.peg, valuation.ev_ebitda)",
+     "a: valuation.peg cited 29.8 vs 2.74 in snapshot "
+     "(it matches valuation.ev_ebitda, but numbers pair with keys in order)"),
+    ("a 12-34x range (valuation.fiscal_year_pe)", "a: valuation.fiscal_year_pe cited 12x vs 34x, 22.2x in snapshot"),
+    ("an uncited 12-38x range.", 'a: uncited number 12x in: "an uncited 12-38x range."'),
+    ("targets of $215-999 (analyst.target_low, analyst.target_high)",
+     "a: analyst.target_high cited $999 vs 405 in snapshot"),
+    ("the RSI 86 (profitability.fcf_margin)", "a: profitability.fcf_margin cited 86 vs 0.2308 in snapshot"),
+])
+def test_prose_fails_s6(prose, failure):
+    assert check_prose("a", prose, S6)[0] == failure
+
+
+def test_uncited_range_reports_both_bounds():
+    assert check_prose("a", "an uncited 12-38x range.", S6) == [
+        'a: uncited number 12x in: "an uncited 12-38x range."', 'a: uncited number 38x in: "an uncited 12-38x range."']
+
+
+def test_more_numbers_than_keys_need_distinct_values():
+    assert check_prose("a", "from 22.2x to 34.0x, yield 2.2% (valuation.fiscal_year_pe, valuation.fcf_yield)",
+                       S6) == []
+    assert check_prose("a", "yield 2.2% and 2.2% and 22.2x (valuation.fiscal_year_pe, valuation.fcf_yield)", S6) == [
+        "a: 2.2%, 2.2%, 22.2x cannot each match a distinct value of (valuation.fiscal_year_pe, valuation.fcf_yield)"]
+
+
+NOISY = "See https://example.com/q?x=1.5&y=2 filed 2026-10-29 for detail."
+
+
+def test_noise_re_strips_urls_and_dates(monkeypatch):
+    assert check_prose("a", NOISY, SRC) == []
+    monkeypatch.setattr(citations, "NOISE_RE", re.compile(r"(?!x)x"))  # never matches: the guard sees the URL
+    assert check_prose("a", NOISY, SRC) != []

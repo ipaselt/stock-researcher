@@ -33,6 +33,7 @@ market data (yfinance, behind a provider Protocol)
 python -m venv .venv && .venv/Scripts/python.exe -m pip install -e ".[dev]"
 .venv/Scripts/python.exe -m stock_researcher snapshot AAPL   # data/AAPL.json
 .venv/Scripts/python.exe -m stock_researcher score AAPL      # data/AAPL.score.json + one-line summary
+.venv/Scripts/python.exe -m stock_researcher score AAPL --table  # ... plus the full scorecard as a text table
 .venv/Scripts/python.exe -m stock_researcher run AAPL        # snapshot + score + data/AAPL/skeleton.md
 .venv/Scripts/python.exe -m stock_researcher assemble AAPL   # needs data/AAPL/verdict.md; writes reports/AAPL-<date>.md
 .venv/Scripts/python.exe -m stock_researcher ledger          # rebuilds reports/ratings.csv
@@ -73,6 +74,76 @@ exist, every number written between the previous citation and a key must match i
 fails. The JSON block's `reason` and `flags` get the same prose check. Results go to `data/<T>/citations.json`;
 the report appendix shows `citation check: PASS (5/5 agents)` or the failing agents, whose sections are
 withheld. `run <T> --offline` re-scores today's saved snapshot without fetching.
+
+## Sample report
+
+[reports/AAPL-2026-09-28.md](reports/AAPL-2026-09-28.md) is a real run, with all five agents passing the
+citation check. Its verdict table:
+
+| Item | Value |
+|---|---|
+| Suggested label | HAS RUN (L7) |
+| Score | 60.1/100 (good) |
+| Coverage | 94% |
+| Fair value | $295.06 (band $250.80 – $339.32) |
+| Entry target | $250.80 |
+| Upside to fair value | -13.3% |
+
+HAS RUN (rule L7) means a decent business whose price ($340.15) already sits above the top of its own
+fair-value band while trading within 5% of its 52-week high: don't chase it, and new money waits for the
+$250.80 entry target. The planner confirmed the rule's label rather than overriding it.
+
+## A run, step by step
+
+`/research AAPL` ends by printing five lines — for the sample run, in the shape the command prescribes:
+
+```
+Label: HAS RUN — confirms the suggested HAS RUN (L7), no override
+Score: 60.1/100 (good), coverage 94%
+Fair value: $295.06 (band $250.80 – $339.32); entry target $250.80
+Thesis: a high-quality, cash-generative franchise whose stock has already priced in its best year in some time
+Report: reports/AAPL-2026-09-28.md
+```
+
+What each artifact on the way there is:
+
+- `data/AAPL.json` — the snapshot: every field normalized to a fraction or a multiple, plus the fields that
+  were missing and any warnings.
+- `data/AAPL.score.json` — the 18 graded metrics, the five category scores, the total and coverage, the fair
+  value with its method and inputs, and the suggested label with the rule that fired (`score AAPL --table`
+  prints it as a table).
+- `data/AAPL/skeleton.md` — the report with the header, verdict table, scorecard and fair value already
+  filled in, and an empty slot per agent section and for the planner's verdict.
+- `data/AAPL/<agent>.md` — each analyst's section: findings, an assessment, and a closing JSON block listing
+  every number it cited with its key.
+- `data/AAPL/citations.json` — `verify-citations` output: PASS, or the exact mismatches, per agent.
+- `data/AAPL/verdict.md` — the planner's final label, entry target, override reason (`none` here), thesis,
+  risks and what would change its mind.
+- `reports/AAPL-2026-09-28.md` — the assembled report; its YAML front-matter is the ledger row.
+- `reports/ratings.csv` — the ledger, rebuilt from every report's front-matter, keeping both the suggested and
+  the final label.
+
+`data/` is regenerated on every run and never committed; `reports/` is the permanent record.
+
+## Design choices worth asking me about
+
+- **Absolute bands, not sector-relative ones:** a forward P/E of 40 is expensive whatever the peers trade at,
+  so a sector-wide bubble cannot make a stock look cheap, and a score needs no peer data to reproduce.
+- **Momentum is only 10%:** over a 1-5 year horizon price action says when to act, not whether the business
+  is good, so at full coverage trend alone can move the total by at most 10 points
+  ([docs/scorecard.md](docs/scorecard.md)).
+- **Fair value uses the company's own median P/E:** the median year-end P/E of its last 3-5 profitable fiscal
+  years anchors to how the market has actually priced this business (the median so one distorted year cannot
+  move it), with a sector default only when fewer than 3 such years exist ([docs/fair-value.md](docs/fair-value.md)).
+- **The label rule is code and every override is logged:** rules L1-L8 pick the label mechanically; the
+  planner may override only with the rule id, the new label and one cited reason, `assemble` refuses a
+  silent change, and both labels land in the ledger so the rules' hit rate can be measured
+  ([docs/labels.md](docs/labels.md)).
+- **Agents cite instead of compute:** every number an agent writes must be in the snapshot or score file with
+  its key beside it, and `verify-citations` fails the agent on a wrong or dishonestly rounded value, an
+  uncited decimal or percentage, an integer next to a metric word (`RSI is 86`), a range bound
+  (`12-38x`), or numbers attributed to the wrong key when several keys share one parenthesis — so the report
+  cannot contain an invented number without the check saying so.
 
 ## Disclaimer
 
