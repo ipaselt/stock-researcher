@@ -7,11 +7,27 @@ Hard checks per agent file data/<T>/<agent>.md (exactly one ```json block allowe
   A citation is a parenthesised key list, `(valuation.forward_pe)` or `(a.b, c.d)` (backticks allowed; a
   single-segment key such as `total` counts when it exists), or a key with its value, `(growth.revenue_cagr_3y
   1.8%)`, `(key: 1.8%)`, `(technical.golden_cross = true)`. Every dotted key must exist. Every number between
-  the previous citation (or the sentence start) and a citation must match one of that citation's keys; a
-  decimal or unit-bearing number after the sentence's last citation, or in a sentence with no citation, is
-  uncited and fails. Plain integers outside a citation window are ignored, and so are dates, fiscal years,
-  `N-day`-style compounds, ranges like `1-5`, `S&P 500`, list numerals, `RSI(14)`, and numbers glued to letters.
-- Units: % = /100; B/bn/billion, M/mn/million, T/tn/trillion scale; x/X/times and $ as-is; bps and pp fail.
+  the previous citation (or the sentence start) and a citation is in that citation's window and must match:
+  - one key: any number may match it (a list key: any element);
+  - several keys, no more numbers than keys: numbers pair with keys in order of appearance, number i <-> key i
+    (`215.0 to 405.0 (analyst.target_low, analyst.target_high)`). The contract cites "with the key in
+    parentheses", so the order is the attribution: a swapped pair fails, and so does `PEG of 29.8
+    (valuation.peg, valuation.ev_ebitda)` when 29.8 is the EV/EBITDA;
+  - several keys, more numbers than keys (only possible with list keys): each number must match a DISTINCT
+    key or a distinct list element.
+  A decimal or unit-bearing number after the sentence's last citation, or in a sentence with no citation, is
+  uncited and fails; so does a plain integer next to a metric word (METRIC_WORDS: `RSI is 86`, `EPS of 86`).
+  Other plain integers outside a citation window are ignored (`41 analysts`).
+  Skipped everywhere: dates, fiscal years, `N-day`-style compounds, unitless integer ranges like `1-5`,
+  `S&P 500`, list numerals, `RSI(14)`, and numbers glued to letters (`v2.0`). Skipped ONLY outside a citation
+  window (inside one they are checked like any number): model numbers after a capitalised non-metric token
+  (`iPhone 18`), indicator periods directly next to SMA/EMA/RSI/MACD (`SMA 50`, `14 RSI`), and decimal
+  versions after a version-shaped token -- lowercase-first mixed case or the literal `Version`/`v` (`iOS 26.1`,
+  `Version 2.0`); none of these when the token is the sentence's first word. A range is two numbers when either
+  bound has a decimal, the upper a unit, or the lower a $ (`12-38x`, `$215-405`, `215.0-999.0`, `-5-10%`): the
+  unit and $ apply to both bounds, a leading sign to the low one, and both bounds are checked.
+- Units: %/percent/pct = /100; B/bn/billion, M/mn/million, T/tn/trillion scale; x/X/times and $ as-is; bps and
+  pp fail.
 
 Numbers match within 1% relative (absolute 1e-9 when the reference is 0). In prose a number also matches when
 it is the reference rounded to the decimals it is printed with (at least one decimal, the agent contract's
@@ -32,13 +48,17 @@ UNSUPPORTED_UNITS = {"bps", "pp"}
 
 JSON_BLOCK_RE = re.compile(r"```json[ \t]*\n(.*?)\n[ \t]*```", re.DOTALL)
 KEY_TOKEN_RE = re.compile(r"[a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)*")
-UNIT = r"%|times|billion|bn|million|mn|trillion|tn|bps|pp|x|X|B|M|T"
+UNIT = r"%|percent|pct|times|billion|bn|million|mn|trillion|tn|bps|pp|x|X|B|M|T"
 # sign, $, sign, digits (1,234 thousands allowed), decimals, unit: five groups.
 NUMBER = (rf"([-+−]?)(\$?)([-−]?)((?:\d{{1,3}}(?:,\d{{3}})+|\d+)(?:\.\d+)?)(?:\s?({UNIT})(?![\w]))?")
 # ... in running text: not the tail of a word, decimal, range, ratio or time.
 NUMBER_RE = re.compile(rf"(?<![\w.\-−/:&]){NUMBER}")
 # A key with its value inside the parentheses: groups 1 key, 2-6 number, 7 true/false/null.
 INLINE_RE = re.compile(rf"^({KEY_TOKEN_RE.pattern})(?:\s*[:=]\s*|\s+)(?:{NUMBER}|(true|false|null))$")
+# A range `low-high`: groups 1 sign, 2 $, 3 low, 4 high, 5 unit. Two claims when either bound has a decimal, the
+# upper a unit, or the lower a $; otherwise (`1-5 year`) a unitless range, left to _skip.
+RANGE_RE = re.compile(rf"(?<![\w.\-−/:&])([-−]?)(\$?)(\d+(?:\.\d+)?)\s?[-–]\s?\$?(\d+(?:\.\d+)?)"
+                      rf"(?:\s?({UNIT})(?![\w]))?(?![\w.])")
 PAREN_RE = re.compile(r"\(([^()]*)\)")
 NOISE_RE = re.compile(r"https?://[^\s)\]]+|\b\d{4}-\d{2}-\d{2}\b|S&P\s?500|`|\*|(?<![A-Za-z0-9])_|_(?![A-Za-z0-9])"
                       r"|^[ \t]*(?:[-+]|\d+[.)])[ \t]+", re.MULTILINE)
@@ -106,7 +126,8 @@ class _Number:
     def __init__(self, groups):
         sign, dollar, inner_sign, digits, unit = groups
         self.negative = any(c in sign + inner_sign for c in "-−")
-        self.digits, self.unit, self.dollar = digits.replace(",", ""), unit or "", bool(dollar)
+        unit = "%" if unit in ("percent", "pct") else unit or ""
+        self.digits, self.unit, self.dollar = digits.replace(",", ""), unit, bool(dollar)
         self.shown = f"{'-' if self.negative else ''}{'$' if dollar else ''}{digits}{self.unit}"
 
     @property
@@ -137,24 +158,116 @@ class _Number:
 
 
 PERIOD_WORD_RE = re.compile(r"\s+(?:day|week|month|quarter|year)s?\b")
-NAME_BEFORE_RE = re.compile(r"\b\w*[A-Z]\w*\s$")
+NAME_BEFORE_RE = re.compile(r"(?<![\w/])[\w/]*[A-Z][\w/]*\s$")  # a capitalised token, then one space
+VERSION_BEFORE_RE = re.compile(r"(?<![\w/])(?:[a-z]+[A-Z][A-Za-z]*|Version|v)\s$")  # iOS, iPhone, macOS, Version
+METRIC_WORDS = ("RSI", "EPS", "ROE", "ROA", "P/E", "PE", "PEG", "EV", "FCF", "SMA", "CAGR", "YoY", "Beta", "EBITDA",
+                "D/E", "P/B", "P/S", "EV/EBITDA", "MACD")
+INDICATORS = ("SMA", "EMA", "RSI", "MACD")  # an integer right next to one is its period: SMA 50, 14 RSI
+
+
+def _words(words) -> str:
+    return rf"(?<![A-Za-z])(?:{'|'.join(re.escape(w) for w in sorted(words, key=len, reverse=True))})(?![A-Za-z])"
+
+
+METRIC = _words(METRIC_WORDS)
+METRIC_RE = re.compile(METRIC)
+METRIC_BEFORE_RE = re.compile(rf"{METRIC}\S*\s+(?:\S+\s+)?$")  # `RSI 86`, `RSI is 86`, `RSI(14) of 86`
+METRIC_AFTER_RE = re.compile(rf"\s*{METRIC}")  # `86 EPS`
+PERIOD_BEFORE_RE = re.compile(rf"{_words(INDICATORS)}\s$")
+PERIOD_AFTER_RE = re.compile(rf"\s{_words(INDICATORS)}")
+
+
+def _named(text: str, m: re.Match) -> bool:
+    """A plain number that names something rather than claims a value -- honoured ONLY outside a citation window.
+    Integers: a model number after a capitalised token that is not a metric word and not the sentence's first
+    word (iPhone 18), or an indicator period directly next to SMA/EMA/RSI/MACD (SMA 50, 14 RSI). Decimals: a
+    version after a version-shaped token that is not the sentence's first word -- a lowercase-first mixed-case
+    word or the literal Version/v (iOS 26.1, Version 2.0); never after D/E, PE, Fair Value, Apple or Score."""
+    if m.group(5) or m.group(2) or m.group(1) or m.group(3):
+        return False
+    before = text[:m.start()]
+    if "." in m.group(4):
+        name = VERSION_BEFORE_RE.search(before)
+        return bool(name and re.search(r"\w", before[:name.start()]))
+    if PERIOD_BEFORE_RE.search(before) or PERIOD_AFTER_RE.match(text, m.end()):
+        return True
+    name = NAME_BEFORE_RE.search(before)
+    return bool(name and re.search(r"\w", before[:name.start()]) and not METRIC_RE.search(name.group(0)))
+
+
+def _near_metric(text: str, m: re.Match) -> bool:
+    """A metric word just before the number (at most one word between) or right after it."""
+    return bool(METRIC_BEFORE_RE.search(text[:m.start()]) or METRIC_AFTER_RE.match(text, m.end()))
 
 
 def _skip(text: str, m: re.Match) -> bool:
-    """Numbers that are not claims. Any number glued to letters (1y, 14th) or written as RSI(14); and, for plain
-    integers (no unit, no $, no decimal): N-day compounds and ranges (3-year, 1-5, 3- or 5-year), periods
-    (1 year, 3 months), fiscal years (19xx/20xx), and model numbers after a capitalised word (iPhone 18)."""
+    """Numbers that are not claims, wherever they stand. Any number glued to letters (1y, 14th, v2.0) or written
+    as RSI(14); and, for plain integers (no unit, no $, no sign, no decimal): N-day compounds and unitless
+    ranges (3-year, 1-5, 3- or 5-year), periods (1 year, 3 months), and fiscal years (19xx/20xx)."""
     after = text[m.end():m.end() + 2]
     if not m.group(5) and after[:1] and (after[0].isalnum() or after[0] == "_"):
         return True
     if m.start() >= 2 and text[m.start() - 1] == "(" and text[m.start() - 2].isalpha() and after[:1] == ")":
         return True
-    if m.group(5) or m.group(2) or "." in m.group(4) or m.group(1) or m.group(3):
+    if m.group(5) or m.group(2) or m.group(1) or m.group(3):
         return False
     digits = m.group(4)
+    if "." in digits:
+        return False
     return (after[:1] == "-" or bool(PERIOD_WORD_RE.match(text, m.end()))
-            or (len(digits) == 4 and digits[:2] in ("19", "20"))
-            or bool(NAME_BEFORE_RE.search(text[max(0, m.start() - 30):m.start()])))
+            or (len(digits) == 4 and digits[:2] in ("19", "20")))
+
+
+def _numbers(sentence: str) -> list[tuple[int, int, "_Number", bool, bool]]:
+    """(start, end, number, counts when uncited, named) for every claim-like number, in order of appearance.
+    `named` numbers (see _named) are ignored when uncited and checked like any other inside a citation window."""
+    out, spans = [], []
+    for r in RANGE_RE.finditer(sentence):
+        sign, dollar, low, high, unit = r.groups()
+        if dollar or unit or "." in low + high:
+            spans.append((r.start(), r.end()))
+            out += [(r.start(), r.end(), _Number((s, dollar, "", d, unit)), True, False)
+                    for s, d in ((sign, low), ("", high))]
+    for m in NUMBER_RE.finditer(sentence):
+        if any(s <= m.start() < e for s, e in spans) or _skip(sentence, m):
+            continue
+        number = _Number(m.groups())
+        counts = number.counts_when_uncited or _near_metric(sentence, m)
+        out.append((m.start(), m.end(), number, counts, _named(sentence, m)))
+    return sorted(out, key=lambda n: n[0])
+
+
+def _one_to_one(numbers: list["_Number"], slots: list[tuple[str, tuple]]) -> bool:
+    """True when every number can take a distinct slot it matches (a small backtracking search)."""
+    def assign(i: int, used: frozenset) -> bool:
+        return i == len(numbers) or any(
+            j not in used and numbers[i].failure({key: ref}) is None and assign(i + 1, used | {j})
+            for j, (key, ref) in enumerate(slots))
+    return assign(0, frozenset())
+
+
+def _window_failures(numbers: list["_Number"], found: dict[str, tuple]) -> list[str]:
+    """Why the numbers in one citation window do not fit its keys (the rule is in the module docstring)."""
+    keys = list(found)
+    if len(keys) == 1:
+        return [why for n in numbers if (why := n.failure(found))]
+    if len(numbers) <= len(keys):  # number i <-> key i
+        out = []
+        for number, key in zip(numbers, keys):
+            if why := number.failure({key: found[key]}):
+                other = next((k for k in keys if k != key and number.failure({k: found[k]}) is None), None)
+                out.append(why + (f" (it matches {other}, but numbers pair with keys in order)" if other else ""))
+        return out
+    if unmatched := [why for n in numbers if (why := n.failure(found))]:
+        return unmatched
+    slots = []
+    for key, (where, ref) in found.items():
+        refs = [r for r in ref if _is_num(r)] if isinstance(ref, list) else [ref]
+        slots += [(key, (where, r)) for r in refs]
+    if _one_to_one(numbers, slots):
+        return []
+    shown = ", ".join(n.shown for n in numbers)
+    return [f"{shown} cannot each match a distinct value of ({', '.join(keys)})"]
 
 
 def _citation(content: str, sources: dict[str, dict]):
@@ -202,16 +315,18 @@ def check_prose(agent: str, text: str, sources: dict[str, dict]) -> list[str]:
                 elif why := _Number(inline.groups()[1:6]).failure(found):
                     failures.append(f"{agent}: {why}")
             cites.append((m.start(), m.end(), found))
-        for m in NUMBER_RE.finditer(sentence):
-            if any(s <= m.start() < e for s, e, _ in cites) or _skip(sentence, m):
+        windows = [[] for _ in cites]
+        for start, end, number, counts, named in _numbers(sentence):
+            if any(s <= start < e for s, e, _ in cites):
                 continue
-            number = _Number(m.groups())
-            nxt = next((found for s, _, found in cites if s >= m.end()), None)
-            if nxt is None:
-                if number.counts_when_uncited:
-                    failures.append(f'{agent}: uncited number {number.shown} in: "{_excerpt(sentence)}"')
-            elif nxt and (why := number.failure(nxt)):
-                failures.append(f"{agent}: {why}")
+            i = next((i for i, (s, _, _) in enumerate(cites) if s >= end), None)
+            if i is not None:
+                windows[i].append(number)  # inside a window nothing is exempt as a name, version or period
+            elif counts and not named:
+                failures.append(f'{agent}: uncited number {number.shown} in: "{_excerpt(sentence)}"')
+        for (_, _, found), numbers in zip(cites, windows):
+            if found and numbers:
+                failures += [f"{agent}: {why}" for why in _window_failures(numbers, found)]
     return failures
 
 
