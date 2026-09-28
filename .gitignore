@@ -68,3 +68,8 @@ data/*
 !data/.gitkeep
 reports/ratings.csv
 .pytest_cache/
+
+# web/ (Next.js) — Vercel link state and TypeScript build artifacts
+.vercel/
+next-env.d.ts
+*.tsbuildinfo

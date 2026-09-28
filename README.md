@@ -93,6 +93,22 @@ HAS RUN (rule L7) means a decent business whose price ($340.15) already sits abo
 fair-value band while trading within 5% of its 52-week high: don't chase it, and new money waits for the
 $250.80 entry target. The planner confirmed the rule's label rather than overriding it.
 
+## Website
+
+Every committed report and the three methodology pages are published as a static Next.js site from `web/` on
+Vercel. It is built at deploy time from `reports/*.md` (front-matter drives the index) and `docs/*.md`: no live
+data, no API, no environment variables. Every push to `main` redeploys, so `/research` pushes its report commit.
+
+Run it locally (port 3001):
+
+```bash
+cd web && npm install && npm run dev
+```
+
+Deploy on Vercel: Add New → Project → import this repository; set **Root Directory** to `web`; keep **"Include
+source files outside of the Root Directory"** on (the build reads `../reports` and `../docs`); framework preset
+Next.js; no environment variables. Deploy.
+
 ## A run, step by step
 
 `/research AAPL` ends by printing five lines — for the sample run, in the shape the command prescribes:
