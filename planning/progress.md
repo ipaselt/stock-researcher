@@ -6,4 +6,4 @@
 > *(Where-are-we = this board + the top of `../memory/completed-tasks.md`; what's-next = `todo.md`.)*
 
 ## In progress
-- 🔄 **#5** S5 Guards · **owner:** opus-worker (sub-agent) · branch `branches/s5-guards` · status: dispatched 2026-09-28 — `verify-citations` (JSON block + prose citations vs snapshot/score, 1% tolerance, result into the report appendix), provider retry/backoff, `run --offline`, `test_live.py` (AAPL canary + NVDA split-consistency), command step-5 wording → PR `needs-review`.
+- 🔄 **#6** S6 Polish + guard follow-ups · **owner:** opus-worker (sub-agent) · branch `branches/s6-polish` · status: dispatched 2026-09-28 — guard follow-ups (version numbers, integer claims, `percent`, one-to-one multi-key, NOISE_RE test, integer ranges), `score --table`, README walkthrough with the AAPL sample → PR `needs-review`.
