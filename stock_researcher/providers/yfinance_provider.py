@@ -11,16 +11,23 @@ RETRY_DELAYS = (1, 2)  # seconds slept before the 2nd and 3rd attempt
 _sleep = time.sleep  # module-level so tests can monkeypatch it
 
 
-def _retry(fetch):
-    """fetch() with up to 3 attempts; TickerNotFound is an answer, not a transient failure, so it is not retried."""
+def _retry(fetch, retry_empty: bool = False):
+    """fetch() with up to 3 attempts; TickerNotFound is an answer, not a transient failure, so it is not retried.
+
+    retry_empty: an empty result also counts as a failure (yfinance's history() swallows errors and returns an
+    empty frame); after the last attempt the empty result is returned as-is.
+    """
     for delay in RETRY_DELAYS:
         try:
-            return fetch()
+            result = fetch()
+            if not (retry_empty and result.empty):
+                return result
         except TickerNotFound:
             raise
         except Exception:
-            _sleep(delay)
-    return fetch()  # the last attempt: its error propagates
+            pass
+        _sleep(delay)
+    return fetch()  # the last attempt: its error (or empty result) propagates
 
 
 class YFinanceProvider:
@@ -36,7 +43,8 @@ class YFinanceProvider:
         return _retry(fetch)
 
     def fetch_history(self, ticker: str, period: str = "5y") -> pd.DataFrame:
-        return _retry(lambda: yf.Ticker(ticker).history(period=period, interval="1d", auto_adjust=True))
+        return _retry(lambda: yf.Ticker(ticker).history(period=period, interval="1d", auto_adjust=True),
+                      retry_empty=True)
 
     def fetch_income_stmt(self, ticker: str) -> pd.DataFrame:
         return _retry(lambda: yf.Ticker(ticker).income_stmt)

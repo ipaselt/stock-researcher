@@ -109,3 +109,22 @@ def test_three_failures_reraise_last_error(monkeypatch, sleeps):
     with pytest.raises(ConnectionError, match="still down"):
         YFinanceProvider().fetch_history("AAPL")
     assert flaky.calls == 3 and sleeps == [1, 2]
+
+
+class _HistoryTicker:
+    def __init__(self, frame):
+        self.frame = frame
+
+    def history(self, **kwargs):
+        return self.frame
+
+
+def test_empty_history_is_retried_then_returned(monkeypatch, sleeps):
+    frames = [pd.DataFrame(), pd.DataFrame({"Close": [1.0]})]
+    monkeypatch.setattr(yfinance, "Ticker", lambda symbol: _HistoryTicker(frames.pop(0)))
+    assert list(YFinanceProvider().fetch_history("AAPL")["Close"]) == [1.0]
+    assert sleeps == [1]
+    calls = []
+    monkeypatch.setattr(yfinance, "Ticker", lambda symbol: calls.append(symbol) or _HistoryTicker(pd.DataFrame()))
+    assert YFinanceProvider().fetch_history("AAPL").empty  # still empty after 3 attempts: returned, not raised
+    assert len(calls) == 3 and sleeps == [1, 1, 2]

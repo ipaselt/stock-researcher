@@ -8,7 +8,7 @@
 - The scorecard's momentum category scores 100.0 (categories.momentum.score), both inputs graded A (performance.rel_1y, technical.price_vs_sma200).
 
 ### Assessment
-The tape is unambiguously healthy: a golden cross, price above both moving averages, and outperformance of the S&P 500 by 16.7% over one year and 16.7% over three. That is a trend a holder wants to own, not fight. The timing read is different: at -1.1% from the 52-week high and 18.7% above the 200-day average, the stock is extended, and the last year's -13.8% drawdown shows the size of pullback that has occurred inside this trend. RSI of 66.2 is not yet overbought, so this is extension rather than a blow-off. For a 1-5 year holder, momentum supports the name but the entry window is poor; staged buying or waiting for a reversion toward the 50-day (321.9) or 200-day (287.7) is the better timing posture.
+The tape is unambiguously healthy: a golden cross, price above both moving averages, and outperformance of the S&P 500 by 16.7% over one year (performance.rel_1y) and 16.7% over three (performance.rel_3y). That is a trend a holder wants to own, not fight. The timing read is different: at -1.1% from the 52-week high (technical.pct_from_52w_high) and 18.7% above the 200-day average (technical.price_vs_sma200), the stock is extended, and the last year's -13.8% drawdown (performance.max_drawdown_1y) shows the size of pullback that has occurred inside this trend. RSI of 66.2 (technical.rsi_14) is not yet overbought, so this is extension rather than a blow-off. For a 1-5 year holder, momentum supports the name but the entry window is poor; staged buying or waiting for a reversion toward the 50-day 321.9 (technical.sma_50) or 200-day 287.7 (technical.sma_200) is the better timing posture.
 
 ### Risks and caveats
 - Extension cuts both ways: 18.7% above the 200-day (technical.price_vs_sma200) leaves room for a mean-reversion pullback without the trend breaking.
@@ -43,7 +43,7 @@ The tape is unambiguously healthy: a golden cross, price above both moving avera
   {"key": "performance.max_drawdown_1y", "value": -0.13798523953754416},
   {"key": "categories.momentum.score", "value": 100.0}
  ],
- "flags": ["extended: -1.1% from 52w high, 18.7% above 200-day"],
+ "flags": ["extended"],
  "suggested_label_adjustment": null,
- "reason": "Strong uptrend (golden cross, rel_1y 16.7%) but price is -1.1% from the 52-week high (technical.pct_from_52w_high), which supports the scorecard's HAS RUN timing call rather than moving it."}
+ "reason": "Strong uptrend (golden cross) with rel_1y 16.7% (performance.rel_1y), but price is -1.1% from the 52-week high (technical.pct_from_52w_high), which supports the scorecard's HAS RUN timing call rather than moving it."}
 ```

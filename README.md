@@ -67,10 +67,12 @@ label, `assemble` produces `reports/<T>-<date>.md` and rebuilds the ledger, and 
 
 The citation check is the hallucination guard. `verify-citations <T>` reads every agent file in `data/<T>/`
 and fails an agent when a number it cites is not in `data/<T>.json` or `data/<T>.score.json`: every key in
-its closing JSON block must resolve with a value within 1%, and every `(group.field)` key in its prose must
-exist, with any number written just before it matching after unit normalisation (`23.1%` = 0.231, `$107.7B`
-= 1.077e11). Results go to `data/<T>/citations.json`, and the report appendix shows `citation check: PASS
-(5/5 agents)` or the failing agents. `run <T> --offline` re-scores today's saved snapshot without fetching.
+its closing JSON block must resolve with a value within 1%, every `(group.field)` key in its prose must
+exist, every number written between the previous citation and a key must match it after unit normalisation
+(`23.1%` = 0.231, `$107.7B` = 1.077e11), and a decimal or unit-bearing number with no citation in its sentence
+fails. The JSON block's `reason` and `flags` get the same prose check. Results go to `data/<T>/citations.json`;
+the report appendix shows `citation check: PASS (5/5 agents)` or the failing agents, whose sections are
+withheld. `run <T> --offline` re-scores today's saved snapshot without fetching.
 
 ## Disclaimer
 

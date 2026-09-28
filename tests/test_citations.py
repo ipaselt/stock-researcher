@@ -1,4 +1,5 @@
 import json
+import re
 import os
 import shutil
 from pathlib import Path
@@ -86,7 +87,7 @@ SRC = {"snapshot": {"profitability": {"fcf_margin": 0.2308}, "health": {"free_ca
                     "valuation": {"fcf_yield": 0.0217, "earnings_yield": 0.0249, "fiscal_year_pe": [34.0, 22.2]},
                     "technical": {"golden_cross": True}, "events": {"next_earnings_date": "2026-10-29"},
                     "analyst": {"upside": -0.136}},
-       "score": {"fair_value": {"n_years": 4}}}
+       "score": {"fair_value": {"n_years": 4}, "total": 60.1, "coverage_pct": 0.94}}
 
 
 @pytest.mark.parametrize("prose", [
@@ -219,14 +220,22 @@ def test_assemble_renders_fail_and_skips_dropped_agents(tmp_cwd, run_dir):
     results["technicals"] = {"status": "FAIL", "failures": ["t: a"]}
     results["news-catalysts"] = {"status": "FAIL", "failures": ["n: a"]}
     write_citations(run_dir, results)
-    assert "citation check: FAIL — valuation: 2 mismatches; technicals: 1 mismatch\n" in appendix(tmp_cwd)
+    text = do_assemble(tmp_cwd).read_text(encoding="utf-8")
+    assert "citation check: FAIL — valuation: 2 mismatches; technicals: 1 mismatch\n" in text
+    for agent in ("valuation", "technicals"):  # withheld from the report
+        assert f"{agent} says hello." not in text
+        assert f"- {agent} failed the citation check; its section is withheld" in text
+    assert text.count("_(agent failed citation check)_") == 2
+    assert "growth-quality says hello." in text
 
 
 def test_assemble_ignores_stale_citations_json(tmp_cwd, run_dir):
     write_agents(run_dir, FIVE)
     write_verdict(run_dir)
     write_citations(run_dir, {a: {"status": "PASS", "failures": []} for a in FIVE})
-    age(run_dir / "citations.json", seconds=1)  # an agent file changed after verify-citations
+    age(run_dir / "skeleton.md", seconds=120)  # citations.json stays newer than the skeleton ...
+    age(run_dir / "citations.json", seconds=1)  # ... but older than the agent files: one changed after the check
+    assert (run_dir / "skeleton.md").stat().st_mtime < (run_dir / "citations.json").stat().st_mtime
     text = appendix(tmp_cwd)
     assert "citation check: not run" in text
     assert "- stale citations.json ignored" in text
@@ -248,3 +257,102 @@ def test_unreadable_score_exits_2(aapl_data, capsys):
     (aapl_data / "AAPL.score.json").write_text("{not json", encoding="utf-8")
     assert cli.main(["verify-citations", "AAPL"]) == 2
     assert "verify-citations AAPL:" in capsys.readouterr().err
+
+
+# --- mutation: every decimal the real fixtures print is guarded --------------------------------------------
+
+MUTATION_EXCEPTIONS: dict[str, str] = {}  # "file: number" -> why a x1.5 change of it cannot be caught
+
+
+@pytest.mark.parametrize("name", sorted(p.name for p in AGENT_OUTPUTS.glob("*.md")))
+def test_inflating_any_printed_decimal_fails(name, sources):
+    """Each decimal in the prose, reason and flags, inflated x1.5 one at a time, must produce a failure.
+    Decimals inside numbers_cited are the JSON-block check's job and are covered by its own tests."""
+    text = (AGENT_OUTPUTS / name).read_text(encoding="utf-8")
+    start = text.index('"numbers_cited"')
+    end = text.index("\n ],", start)
+    missed, count = [], 0
+    for m in re.finditer(r"\d+\.\d+", text):
+        if start <= m.start() < end or f"{name}: {m.group(0)}" in MUTATION_EXCEPTIONS:
+            continue
+        decimals = len(m.group(0).split(".")[1])
+        mutated = text[:m.start()] + f"{float(m.group(0)) * 1.5:.{decimals}f}" + text[m.end():]
+        count += 1
+        if not check_json_block("x", mutated, sources) + check_prose("x", mutated, sources):
+            missed.append(text[max(0, m.start() - 40):m.end() + 20])
+    assert count > 20 and missed == []
+
+
+# --- v1.1 rules: windows, uncited numbers, units, syntax -------------------------------------------------
+
+@pytest.mark.parametrize("prose", [
+    "free cash flow of 107.7 billion (health.free_cashflow)",
+    "free cash flow of $107.7bn (health.free_cashflow)",
+    "free cash flow of 107,721.9 million (health.free_cashflow)",
+    "a 22.2 times multiple (valuation.fiscal_year_pe)",
+    "a 22.2X multiple (valuation.fiscal_year_pe)",
+    "margin of **23.1%** (profitability.fcf_margin)",           # emphasis stripped
+    "margin of _23.1%_ (`profitability.fcf_margin`)",           # backticks inside the parentheses
+    "margin (profitability.fcf_margin: 23.1%)",                  # ':' as the inline separator
+    "a score of 60.1 (total) at 94.0% coverage (coverage_pct)",  # single-segment score keys
+    "from 22.2x to 34.0x (valuation.fiscal_year_pe)",            # every number in the window
+    "FCF 23.1% and yield 2.2% (profitability.fcf_margin, valuation.fcf_yield)",
+    "the 3-year and 1-5 year view of the S&P 500 in 2025, RSI(14) and 1 year: 23.1% (profitability.fcf_margin)",
+    "a margin of 23.1% (profitability.fcf_margin), well above the 10 peers",  # trailing plain integer ignored
+    "Revenue grew in 12 of the last 20 quarters.",               # plain integers in an uncited sentence
+    "sales of the iPhone 18 (profitability.fcf_margin)",         # a model number, not a claim
+])
+def test_prose_passes_v11(prose):
+    assert check_prose("a", prose, SRC) == []
+
+
+@pytest.mark.parametrize("prose, failure", [
+    ("from 99.0x to 34.0x (valuation.fiscal_year_pe)",
+     "a: valuation.fiscal_year_pe cited 99.0x vs 34x, 22.2x in snapshot"),        # not only the last number
+    ("FCF 23.1% and yield 9.9% (profitability.fcf_margin, valuation.fcf_yield)",
+     "a: 9.9% matches none of profitability.fcf_margin (23.08%); valuation.fcf_yield (2.17%)"),
+    ("RSI of 66.2 is not overbought.", 'a: uncited number 66.2 in: "RSI of 66.2 is not overbought."'),
+    ("margin 23.1% (profitability.fcf_margin), up 4.0% on the year",
+     'a: uncited number 4.0% in: "margin 23.1% (profitability.fcf_margin), up 4.0% on the year"'),
+    ("cash of $5 is small.", 'a: uncited number $5 in: "cash of $5 is small."'),
+    ("yield up 25 bps (valuation.fcf_yield)", "a: unsupported unit in 25bps (restate as % or x)"),
+    ("margin up 2 pp (profitability.fcf_margin)", "a: unsupported unit in 2pp (restate as % or x)"),
+    ("a score of 70.0 (total)", "a: total cited 70.0 vs 60.1 in score"),
+    ("margin **33.1%** (profitability.fcf_margin)", "a: profitability.fcf_margin cited 33.1% vs 23.08% in snapshot"),
+    ("mean 2.2 (events.next_earnings_date)", 'a: events.next_earnings_date cited 2.2 vs "2026-10-29" in snapshot'),
+])
+def test_prose_fails_v11(prose, failure):
+    assert check_prose("a", prose, SRC) == [failure]
+
+
+def test_plain_parenthesised_words_are_not_citations():
+    assert check_prose("a", "Apple (the company) and margins (strong).", SRC) == []
+
+
+def test_reason_and_flags_are_checked():
+    text = block([], reason="FCF margin 33.1% (profitability.fcf_margin).", flags=["extended: 18.2% above"])
+    assert check_json_block("a", text, SRC) == [
+        "a: profitability.fcf_margin cited 33.1% vs 23.08% in snapshot",
+        'a: uncited number 18.2% in: "extended: 18.2% above"',
+    ]
+    assert check_json_block("a", block([], reason="FCF margin 23.1% (profitability.fcf_margin).",
+                                       flags=["method_fit:ok"]), SRC) == []
+
+
+def test_more_than_one_json_block_fails():
+    assert check_json_block("a", block([]) + block([]), SRC) == ["a: 2 ```json blocks found; exactly one allowed"]
+
+
+def test_scalar_cited_for_a_list_reference():
+    assert check_json_block("a", block([{"key": "valuation.fiscal_year_pe", "value": 22.2}]), SRC) == []
+    assert check_json_block("a", block([{"key": "valuation.fiscal_year_pe", "value": 50.0}]), SRC) == [
+        "a: valuation.fiscal_year_pe cited 50 vs [34, 22.2] in snapshot"]
+
+
+@pytest.mark.parametrize("content", ["[1, 2]", "{not json", '{"valuation": {"status": "PASS"}}'])
+def test_assemble_tolerates_wrong_shape_citations_json(tmp_cwd, run_dir, content):
+    write_agents(run_dir, FIVE)
+    write_verdict(run_dir)
+    (run_dir / "citations.json").write_text(content, encoding="utf-8")
+    text = appendix(tmp_cwd)
+    assert "citation check: not run" in text and "- unreadable citations.json ignored" in text
