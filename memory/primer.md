@@ -19,9 +19,14 @@
 - **S3 output merged 2026-09-28 (PR #3, c164079)**: `run` → skeleton; `assemble` → `reports/<T>-<date>.md`
   (front-matter is the ledger source; verdict.md validated, override needs a reason); `ledger` rebuilds
   `ratings.csv`. Docs in `docs/` are test-pinned to the code. 453 tests.
-- **S4 agents + command dispatched 2026-09-28**; specs the worker copies: `planning/research/agent-contract.md`
-  and `research-command.md`. After merge the planner runs the first live `/research AAPL`.
-- Nothing researched yet. No reports.
+- **S4 agents + command merged 2026-09-28 (PR #4, 41bcb50)**: `.claude/agents/{valuation,growth-quality,
+  balance-sheet-risk,technicals,news-catalysts,bear-case}.md` + `.claude/commands/research.md`. 469 tests.
+  **Gotcha:** project agents/commands register only in a session rooted INSIDE `projects/stock-researcher/`;
+  from the dev-root planner session, dispatch them as `general-purpose` + `model: opus` with "read your role
+  file first" (what the first live AAPL pass did).
+- **First live research pass done 2026-09-28**: `reports/AAPL-2026-09-28.md` — HAS RUN (L7) confirmed, entry
+  250.80; all five analysts agreed; the end-to-end flow works. Verdict is ~150 planner words; agents wrote
+  their own files. **S5 guards dispatched** (verify-citations, retry, `--offline`, live canaries).
 
 ## Verified facts (don't re-derive)
 - yfinance 1.5.1 live AAPL run 2026-09-28: every planned metric present except `ytdReturn` (fund field →
