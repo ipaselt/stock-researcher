@@ -18,6 +18,7 @@ OPTIONAL_AGENTS = ["bear-case"]
 VERDICT_MARKER = "<!-- VERDICT -->"
 SYNTHESIS_MARKER = "<!-- SYNTHESIS -->"
 ASSEMBLY_MARKER = "<!-- ASSEMBLY WARNINGS -->"
+CITATION_LINE = "citation check: not run"
 LABELS = {"BUY", "SELL", "WAIT", "HAS RUN", "NOT LOOKING"}
 VERDICT_KEYS = ("label_final", "entry_target", "override_reason")
 FRONT_MATTER_KEYS = ("date", "ticker", "price", "score", "coverage", "fair_value", "entry", "label_suggested",
@@ -277,6 +278,30 @@ def _parse_verdict(text: str, label_suggested: str) -> tuple[dict, str]:
     return fields, body
 
 
+def _citation_line(text: str, path: Path, born: float, reported: dict[str, float], warnings: list[str]) -> str:
+    """The skeleton with its `citation check: not run` line replaced from citations.json, when that is current.
+
+    `reported` maps each agent whose file goes into the report to that file's mtime; a dropped (empty) agent's
+    result is left out. citations.json older than skeleton.md or than a reported agent file describes other
+    files: ignored, with a warning.
+    """
+    if not path.exists():
+        return text
+    if path.stat().st_mtime < max([born, *reported.values()]):
+        warnings.append("stale citations.json ignored (older than skeleton.md or an agent file; re-run verify-citations)")
+        return text
+    results = {a: r for a, r in json.loads(path.read_text(encoding="utf-8")).items() if a in reported}
+    failed = {agent: r["failures"] for agent, r in results.items() if r["status"] != "PASS"}
+    if failed:
+        listed = "; ".join(f"{a}: {len(f)} mismatch{'es' if len(f) != 1 else ''}" for a, f in failed.items())
+        line = f"citation check: FAIL — {listed}"
+    else:
+        line = f"citation check: PASS ({len(results)}/{len(reported)} agents)"  # an unchecked agent shows as a gap
+    if text.count(CITATION_LINE) != 1:
+        raise ValueError(f"skeleton.md does not contain {CITATION_LINE!r} exactly once")
+    return text.replace(CITATION_LINE, line)
+
+
 def assemble(ticker: str, data_dir: Path, reports_dir: Path, today: str) -> Path:
     """Fill data/<T>/skeleton.md from the agent files and verdict.md; write reports/<T>-<today>.md.
 
@@ -296,7 +321,7 @@ def assemble(ticker: str, data_dir: Path, reports_dir: Path, today: str) -> Path
         raise ValueError(f"stale verdict: {verdict_path.as_posix()} is older than skeleton.md (from an earlier run)")
     fields, body = _parse_verdict(verdict_text, suggestion["label"])
 
-    warnings, fills = [], {}
+    warnings, fills, reported = [], {}, {}
     for heading, agent in AGENT_SECTIONS:
         path = run_dir / f"{agent}.md"
         content = ""
@@ -307,6 +332,7 @@ def assemble(ticker: str, data_dir: Path, reports_dir: Path, today: str) -> Path
                 content = path.read_text(encoding="utf-8").strip()
         if content:
             fills[slot(agent)] = content
+            reported[agent] = path.stat().st_mtime
         elif agent in OPTIONAL_AGENTS:
             block = section_block(heading, agent) + "\n"
             if text.count(block) != 1:
@@ -316,6 +342,7 @@ def assemble(ticker: str, data_dir: Path, reports_dir: Path, today: str) -> Path
             fills[slot(agent)] = "_(agent did not report)_"
             warnings.append(f"{agent} agent did not report")
 
+    text = _citation_line(text, run_dir / "citations.json", born, reported, warnings)
     thesis, rest = _split_thesis(body)
     if thesis is None:
         warnings.append("verdict.md has no '### Thesis' heading")

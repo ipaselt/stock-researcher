@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 
-from . import __version__, ledger, report
+from . import __version__, citations, ledger, report
 from .providers import TickerNotFound, get_provider
 from .fair_value import compute_fair_value
 from .labels import suggest_label
@@ -103,14 +103,25 @@ def cmd_score(ticker: str) -> int:
     return 0
 
 
-def cmd_run(ticker: str) -> int:
-    """snapshot -> score -> data/<T>/skeleton.md, always regenerated; clears the previous run's data/<T>/*.md."""
+def cmd_run(ticker: str, offline: bool = False) -> int:
+    """snapshot -> score -> data/<T>/skeleton.md, always regenerated; clears the previous run's data/<T>/*.md.
+
+    --offline reuses today's data/<T>.json instead of fetching (the snapshot file is left untouched).
+    """
     ticker = _checked(ticker)
-    if not ticker or not _write_snapshot(ticker):
+    if not ticker:
         return 2
-    snapshot = _load_snapshot(ticker)
-    if not snapshot:
-        return 2
+    if offline:
+        snapshot = _load_snapshot(ticker) if (Path("data") / f"{ticker}.json").exists() else None
+        if not snapshot or snapshot.meta.as_of != dt.date.today().isoformat():
+            print(f"no fresh snapshot for {ticker}; run without --offline", file=sys.stderr)
+            return 2
+    else:
+        if not _write_snapshot(ticker):
+            return 2
+        snapshot = _load_snapshot(ticker)
+        if not snapshot:
+            return 2
     score, fv, label = _write_score(ticker, snapshot)
     out = Path("data") / ticker / "skeleton.md"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -119,6 +130,27 @@ def cmd_run(ticker: str) -> int:
     out.write_text(report.render_skeleton(snapshot, score, fv, label), encoding="utf-8")
     print(f"wrote {out.as_posix()}")
     return 0
+
+
+def cmd_verify_citations(ticker: str) -> int:
+    """Check every agent file's citations; 0 all PASS, 1 any FAIL, 2 snapshot/score missing or nothing to check."""
+    ticker = _checked(ticker)
+    if not ticker:
+        return 2
+    try:
+        results = citations.verify(ticker, Path("data"))
+    except (FileNotFoundError, ValueError) as err:
+        print(f"verify-citations {ticker}: {err}", file=sys.stderr)
+        return 2
+    if not results:
+        print(f"verify-citations {ticker}: no agent reports in data/{ticker}/", file=sys.stderr)
+        return 2
+    for agent, result in results.items():
+        print(f"{result['status']} {agent}")
+        for line in result["failures"]:
+            print(f"  {line}")
+    print(f"wrote data/{ticker}/citations.json")
+    return 1 if any(r["status"] == "FAIL" for r in results.values()) else 0
 
 
 def cmd_ledger() -> int:
@@ -153,6 +185,8 @@ def main(argv: list[str] | None = None) -> int:
         cmd.add_argument("ticker")
         if name == "assemble":
             cmd.add_argument("--date", help="report date YYYY-MM-DD (default: today)")
+        if name == "run":
+            cmd.add_argument("--offline", action="store_true", help="reuse today's data/<T>.json instead of fetching")
     sub.add_parser("ledger")
 
     args = parser.parse_args(argv)
@@ -167,10 +201,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "score":
         return cmd_score(args.ticker)
     if args.command == "run":
-        return cmd_run(args.ticker)
+        return cmd_run(args.ticker, args.offline)
     if args.command == "assemble":
         return cmd_assemble(args.ticker, args.date)
-    if args.command == "ledger":
-        return cmd_ledger()
-    print(f"{args.command}: not implemented yet (slice S5)", file=sys.stderr)
-    return 2
+    if args.command == "verify-citations":
+        return cmd_verify_citations(args.ticker)
+    return cmd_ledger()

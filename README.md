@@ -61,9 +61,16 @@ ledger keeps both the rule-suggested and the final label.
 Open Claude Code in the repo root and run `/research <TICKER>` (`.claude/commands/research.md`). It runs
 `run` for the snapshot, score and skeleton, then dispatches five Opus analysts in parallel (valuation,
 growth-quality, balance-sheet-risk, technicals, news-catalysts; definitions in `.claude/agents/`), each
-writing `data/<T>/<agent>.md`. A citation check follows (`verify-citations`, a stub until slice S5), then an
+writing `data/<T>/<agent>.md`. A citation check follows (`verify-citations`), then an
 optional bear-case agent. The planner writes `data/<T>/verdict.md` confirming or overriding the suggested
 label, `assemble` produces `reports/<T>-<date>.md` and rebuilds the ledger, and the report is committed.
+
+The citation check is the hallucination guard. `verify-citations <T>` reads every agent file in `data/<T>/`
+and fails an agent when a number it cites is not in `data/<T>.json` or `data/<T>.score.json`: every key in
+its closing JSON block must resolve with a value within 1%, and every `(group.field)` key in its prose must
+exist, with any number written just before it matching after unit normalisation (`23.1%` = 0.231, `$107.7B`
+= 1.077e11). Results go to `data/<T>/citations.json`, and the report appendix shows `citation check: PASS
+(5/5 agents)` or the failing agents. `run <T> --offline` re-scores today's saved snapshot without fetching.
 
 ## Disclaimer
 

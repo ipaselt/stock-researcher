@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 import yfinance
 
-from stock_researcher.providers import TickerNotFound
+from stock_researcher.providers import TickerNotFound, yfinance_provider
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -61,6 +61,7 @@ def _no_network(*args, **kwargs):
 def no_network(monkeypatch):
     monkeypatch.setattr(yfinance, "Ticker", _no_network)
     monkeypatch.setattr(yfinance, "download", _no_network)
+    monkeypatch.setattr(yfinance_provider, "_sleep", lambda seconds: None)  # retries must not slow the suite
 
 
 @pytest.fixture
