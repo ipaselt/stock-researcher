@@ -17,11 +17,13 @@ snapshot) and `data/<T>.score.json` (the scorecard), the sections you must read,
 **Hard rules**
 1. **Cite, never compute.** Every number you state must exist in the snapshot or score JSON, written with its
    key in parentheses, e.g. `forward P/E 28.1x (valuation.forward_pe)`. Do not derive new ratios, do not
-   recall figures from memory, do not round beyond one decimal. If a number you need is `null`, say so and
-   reason around the gap. (A citation check runs after you; an agent that states a number not in the JSON is
+   recall figures from memory, do not round beyond one decimal. Put the citation in the same sentence as the
+   number it supports; a decimal or unit-bearing number with no citation in its sentence fails the check. If a
+   number you need is `null`, say so and reason around the gap. (A citation check runs after you; an agent that states a number not in the JSON is
    dropped from the report.)
 2. **Units:** the JSON stores fractions and multiples. Print fractions as percentages (0.2308 → 23.1%) and
-   multiples with `x`. Never print a raw fraction as if it were a percent.
+   multiples with `x`. Never print a raw fraction as if it were a percent. Print signs as stored (a negative
+   drawdown or upside stays negative).
 3. **Scope:** stay inside your dimension. Do not assign a BUY/SELL label; you may suggest an adjustment (see
    the JSON block). Do not comment on other dimensions except to flag a contradiction with your own findings.
 4. **No fetching.** You do not run code, fetch prices, or open broker sites. (Only `news-catalysts` may search

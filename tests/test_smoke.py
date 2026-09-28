@@ -1,6 +1,8 @@
+import re
+
 import pytest
 
-from stock_researcher.cli import main
+from stock_researcher.cli import TICKER_COMMANDS, main
 
 
 def test_version(capsys):
@@ -8,9 +10,11 @@ def test_version(capsys):
     assert "0.1.0" in capsys.readouterr().out
 
 
-def test_stub_not_implemented(capsys):
-    assert main(["verify-citations", "AAPL"]) == 2  # still a stub (S5)
-    assert "not implemented" in capsys.readouterr().err
+def test_every_subcommand_in_help(capsys):
+    with pytest.raises(SystemExit):
+        main(["--help"])
+    listed = re.search(r"\{([a-z,-]+)\}", capsys.readouterr().out).group(1).split(",")
+    assert listed == TICKER_COMMANDS + ["ledger"]  # every subcommand is implemented; none is a stub any more
 
 
 def test_help(capsys):

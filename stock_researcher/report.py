@@ -18,6 +18,7 @@ OPTIONAL_AGENTS = ["bear-case"]
 VERDICT_MARKER = "<!-- VERDICT -->"
 SYNTHESIS_MARKER = "<!-- SYNTHESIS -->"
 ASSEMBLY_MARKER = "<!-- ASSEMBLY WARNINGS -->"
+CITATION_LINE = "citation check: not run"
 LABELS = {"BUY", "SELL", "WAIT", "HAS RUN", "NOT LOOKING"}
 VERDICT_KEYS = ("label_final", "entry_target", "override_reason")
 FRONT_MATTER_KEYS = ("date", "ticker", "price", "score", "coverage", "fair_value", "entry", "label_suggested",
@@ -277,6 +278,41 @@ def _parse_verdict(text: str, label_suggested: str) -> tuple[dict, str]:
     return fields, body
 
 
+def _citations(path: Path, born: float, reported: dict[str, float], warnings: list[str]) -> dict[str, list] | None:
+    """{agent: failure lines} for the reported agents, from citations.json when it is current and well-formed.
+
+    `reported` maps each agent whose file goes into the report to that file's mtime; a dropped (empty) agent's
+    result is left out. None (the check counts as not run, with a warning) when citations.json is missing, older
+    than skeleton.md or a reported agent file (it describes other files), or not the shape verify-citations writes.
+    """
+    if not path.exists():
+        return None
+    if path.stat().st_mtime < max([born, *reported.values()]):
+        warnings.append("stale citations.json ignored (older than skeleton.md or an agent file; re-run verify-citations)")
+        return None
+    try:
+        results = json.loads(path.read_text(encoding="utf-8"))
+        ok = isinstance(results, dict) and all(
+            isinstance(r, dict) and r.get("status") in ("PASS", "FAIL") and isinstance(r.get("failures"), list)
+            and (r["status"] == "PASS") == (not r["failures"]) for r in results.values())
+    except ValueError:
+        ok = False
+    if not ok:
+        warnings.append("unreadable citations.json ignored (re-run verify-citations)")
+        return None
+    return {a: r["failures"] for a, r in results.items() if a in reported}
+
+
+def _citation_line(results: dict[str, list] | None, n_reported: int) -> str:
+    if results is None:
+        return CITATION_LINE
+    failed = {agent: f for agent, f in results.items() if f}
+    if failed:
+        listed = "; ".join(f"{a}: {len(f)} mismatch{'es' if len(f) != 1 else ''}" for a, f in failed.items())
+        return f"citation check: FAIL — {listed}"
+    return f"citation check: PASS ({len(results)}/{n_reported} agents)"  # an unchecked agent shows as a gap
+
+
 def assemble(ticker: str, data_dir: Path, reports_dir: Path, today: str) -> Path:
     """Fill data/<T>/skeleton.md from the agent files and verdict.md; write reports/<T>-<today>.md.
 
@@ -296,7 +332,7 @@ def assemble(ticker: str, data_dir: Path, reports_dir: Path, today: str) -> Path
         raise ValueError(f"stale verdict: {verdict_path.as_posix()} is older than skeleton.md (from an earlier run)")
     fields, body = _parse_verdict(verdict_text, suggestion["label"])
 
-    warnings, fills = [], {}
+    warnings, fills, reported = [], {}, {}
     for heading, agent in AGENT_SECTIONS:
         path = run_dir / f"{agent}.md"
         content = ""
@@ -307,6 +343,7 @@ def assemble(ticker: str, data_dir: Path, reports_dir: Path, today: str) -> Path
                 content = path.read_text(encoding="utf-8").strip()
         if content:
             fills[slot(agent)] = content
+            reported[agent] = path.stat().st_mtime
         elif agent in OPTIONAL_AGENTS:
             block = section_block(heading, agent) + "\n"
             if text.count(block) != 1:
@@ -316,6 +353,14 @@ def assemble(ticker: str, data_dir: Path, reports_dir: Path, today: str) -> Path
             fills[slot(agent)] = "_(agent did not report)_"
             warnings.append(f"{agent} agent did not report")
 
+    checked = _citations(run_dir / "citations.json", born, reported, warnings)
+    for agent, failures in (checked or {}).items():
+        if failures:  # a failing agent's numbers are not published
+            fills[slot(agent)] = "_(agent failed citation check)_"
+            warnings.append(f"{agent} failed the citation check; its section is withheld")
+    if text.count(CITATION_LINE) != 1:
+        raise ValueError(f"skeleton.md does not contain {CITATION_LINE!r} exactly once")
+    text = text.replace(CITATION_LINE, _citation_line(checked, len(reported)))
     thesis, rest = _split_thesis(body)
     if thesis is None:
         warnings.append("verdict.md has no '### Thesis' heading")

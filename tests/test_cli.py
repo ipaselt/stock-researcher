@@ -208,3 +208,36 @@ def test_assemble_bad_date(tmp_cwd, capsys):
 def test_ledger_empty(tmp_cwd, capsys):
     assert cli.main(["ledger"]) == 0
     assert capsys.readouterr().out.strip() == "ledger: 0 rows"
+
+
+# --- run --offline (S5) -------------------------------------------------------------------------------------
+
+def test_run_offline_reuses_todays_snapshot(tmp_cwd, fake_cli_provider, monkeypatch, capsys):
+    assert cli.main(["run", "AAPL"]) == 0
+    snap = tmp_cwd / "data" / "AAPL.json"
+    before = (snap.read_bytes(), snap.stat().st_mtime_ns)
+    (tmp_cwd / "data" / "AAPL" / "valuation.md").write_text("old run", encoding="utf-8")
+    (tmp_cwd / "data" / "AAPL.score.json").unlink()
+    monkeypatch.setattr(cli, "get_provider", lambda: pytest.fail("--offline must not fetch"))
+    capsys.readouterr()
+    assert cli.main(["run", "AAPL", "--offline"]) == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "AAPL: score 60.1 (good), coverage 94%, label HAS RUN (L7), entry 250.80", "wrote data/AAPL/skeleton.md"]
+    assert (snap.read_bytes(), snap.stat().st_mtime_ns) == before
+    assert (tmp_cwd / "data" / "AAPL.score.json").exists()
+    assert sorted(p.name for p in (tmp_cwd / "data" / "AAPL").iterdir()) == ["skeleton.md"]
+
+
+@pytest.mark.parametrize("as_of", ["2020-01-02", None])  # None: no snapshot file at all
+def test_run_offline_without_fresh_snapshot(tmp_cwd, fake_cli_provider, as_of, capsys):
+    if as_of:
+        assert cli.main(["snapshot", "AAPL"]) == 0
+        snap = tmp_cwd / "data" / "AAPL.json"
+        data = json.loads(snap.read_text(encoding="utf-8"))
+        data["meta"]["as_of"] = as_of
+        snap.write_text(json.dumps(data), encoding="utf-8")
+    capsys.readouterr()
+    assert cli.main(["run", "AAPL", "--offline"]) == 2
+    assert capsys.readouterr().err.strip() == "no fresh snapshot for AAPL; run without --offline"
+    assert not (tmp_cwd / "data" / "AAPL.score.json").exists()
+    assert not (tmp_cwd / "data" / "AAPL" / "skeleton.md").exists()

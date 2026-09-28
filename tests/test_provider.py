@@ -6,6 +6,7 @@ import pytest
 import yfinance
 
 from stock_researcher.providers import TickerNotFound, get_provider
+from stock_researcher.providers import yfinance_provider
 from stock_researcher.providers.yfinance_provider import YFinanceProvider
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -65,3 +66,65 @@ def test_fake_provider_unknown_ticker(fake_provider):
         fake_provider.fetch_info("ZZZZZZ")
     with pytest.raises(TickerNotFound):
         fake_provider.fetch_info("NOFIXTURE")
+
+
+class _FlakyTicker:
+    """Stands in for yfinance.Ticker: `failures` constructions raise, then it returns `info`."""
+
+    def __init__(self, failures, error=ConnectionError("rate limited")):
+        self.calls, self.failures, self.error = 0, failures, error
+
+    def __call__(self, symbol):
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise self.error
+        return _StubTicker({"currentPrice": 1.0})
+
+
+@pytest.fixture
+def sleeps(monkeypatch):
+    calls = []
+    monkeypatch.setattr(yfinance_provider, "_sleep", calls.append)
+    return calls
+
+
+def test_retry_succeeds_on_third_attempt(monkeypatch, sleeps):
+    flaky = _FlakyTicker(failures=2)
+    monkeypatch.setattr(yfinance, "Ticker", flaky)
+    assert YFinanceProvider().fetch_info("AAPL") == {"currentPrice": 1.0}
+    assert flaky.calls == 3 and sleeps == [1, 2]
+
+
+def test_ticker_not_found_is_not_retried(monkeypatch, sleeps):
+    calls = []
+    monkeypatch.setattr(yfinance, "Ticker", lambda symbol: calls.append(symbol) or _StubTicker({}))
+    with pytest.raises(TickerNotFound):
+        YFinanceProvider().fetch_info("ZZZZZZ")
+    assert calls == ["ZZZZZZ"] and sleeps == []
+
+
+def test_three_failures_reraise_last_error(monkeypatch, sleeps):
+    flaky = _FlakyTicker(failures=3, error=ConnectionError("still down"))
+    monkeypatch.setattr(yfinance, "Ticker", flaky)
+    with pytest.raises(ConnectionError, match="still down"):
+        YFinanceProvider().fetch_history("AAPL")
+    assert flaky.calls == 3 and sleeps == [1, 2]
+
+
+class _HistoryTicker:
+    def __init__(self, frame):
+        self.frame = frame
+
+    def history(self, **kwargs):
+        return self.frame
+
+
+def test_empty_history_is_retried_then_returned(monkeypatch, sleeps):
+    frames = [pd.DataFrame(), pd.DataFrame({"Close": [1.0]})]
+    monkeypatch.setattr(yfinance, "Ticker", lambda symbol: _HistoryTicker(frames.pop(0)))
+    assert list(YFinanceProvider().fetch_history("AAPL")["Close"]) == [1.0]
+    assert sleeps == [1]
+    calls = []
+    monkeypatch.setattr(yfinance, "Ticker", lambda symbol: calls.append(symbol) or _HistoryTicker(pd.DataFrame()))
+    assert YFinanceProvider().fetch_history("AAPL").empty  # still empty after 3 attempts: returned, not raised
+    assert len(calls) == 3 and sleeps == [1, 1, 2]
