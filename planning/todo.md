@@ -11,7 +11,7 @@
 ## Queue
 *(stable `#N` IDs — never renumber. Every slice → plan: `planning/plans/stock-researcher-v1.md` (slice: S<N>).)*
 - ⏳ **#1** S1 Data layer — provider Protocol + yfinance provider + captured fixtures (AAPL, sparse, negative-EPS, unknown) + FakeProvider/no-network guard + snapshot/normalize + technicals + `snapshot` CLI · **owner:** unassigned · branch `s1-data-layer`
-- ⏳ **#2** S2 Scoring — scorecard + fair value + labels L1-L8 + `score` CLI · **owner:** unassigned · branch `s2-scoring` · ⚠ scoring math = data-fidelity trigger → recommend `/code-review ultra` before merge
+- ⏳ **#2** S2 Scoring — scorecard + fair value + labels L1-L8 + `score` CLI · **owner:** unassigned · branch `s2-scoring` · ⚠ scoring math = data-fidelity trigger → recommend `/code-review ultra` before merge · **decisions carried from the S1 review:** (a) `total_debt` ≤ 0 → `cash_to_debt` and `interest_coverage` grade A ("no meaningful debt"), not "missing"; `interest_coverage` None with debt > 0 (AAPL: no reported interest expense) → skipped + renormalized, flagged in the report; (b) `revenue_cagr_5y` was removed in S1 (yfinance gives a 4-year span) — the scorecard uses `revenue_cagr_3y` only
 - ⏳ **#3** S3 Output — report skeleton + `assemble` + front-matter + derived ledger + `run` CLI + docs (scorecard/fair-value/labels/README) · **owner:** unassigned · branch `s3-output`
 - ⏳ **#4** S4 Agents + command — five Opus agent files + shared contract + `.claude/commands/research.md`; first live `/research AAPL` · **owner:** unassigned · branch `s4-agents`
 - ⏳ **#5** S5 Guards — `verify-citations`, bear-case agent, provider retry/backoff, `--offline`, `test_live.py` · **owner:** unassigned · branch `s5-guards`

@@ -8,7 +8,13 @@
   `python -m venv`), yfinance 1.5.1, pandas 3.0.6 (unpinned major; cap `<4` only if a slice needs 2.x
   behaviour), stub CLI with six subcommands, 3 smoke tests. Scaffold commit on main; public remote
   `ipaselt/stock-researcher`; review labels created.
-- Nothing researched yet. No reports, no fixtures.
+- **S1 data layer merged 2026-09-28 (PR #1, f22eafc)**: `python -m stock_researcher snapshot AAPL` works live
+  (1 field missing: `health.interest_coverage` — Apple reports no interest expense). 99 offline tests.
+  Fixture tickers: AAPL, SPY, HCMC (sparse OTC), RIVN (negative EPS), ZZZZZZ (unknown). `normalize()` returns
+  `(groups, warnings)`; `fields_missing` is computed on the final Snapshot as `group.field` paths.
+  `revenue_cagr_5y` does not exist (yfinance gives a 4-year span).
+- **S2 scoring dispatched 2026-09-28** — gate: adversarial review, then the human runs `/code-review ultra`.
+- Nothing researched yet. No reports.
 
 ## Verified facts (don't re-derive)
 - yfinance 1.5.1 live AAPL run 2026-09-28: every planned metric present except `ytdReturn` (fund field →

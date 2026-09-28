@@ -6,4 +6,4 @@
 > *(Where-are-we = this board + the top of `../memory/completed-tasks.md`; what's-next = `todo.md`.)*
 
 ## In progress
-*(empty — next dispatch: #1 S1 data layer)*
+- 🔄 **#2** S2 Scoring · **owner:** opus-worker (sub-agent) · branch `branches/s2-scoring` · status: dispatched 2026-09-28 — scorecard + fair value + labels L1-L8 + `score` CLI → PR `needs-review` → adversarial review → **human runs `/code-review ultra` (scoring math = data-fidelity trigger) before merge**.

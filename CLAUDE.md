@@ -66,8 +66,8 @@ Run before reporting work complete. Only passing output should reach the user.
   independent review → `reviewed-pass` → merge. Scoring-math slices get flagged for `/code-review ultra`.
 
 ## Current State
-- 2026-09-28: stamped; plan v1 approved (`planning/plans/stock-researcher-v1.md`); S0 scaffold done (stub CLI, 3 tests).
-- Next: S1 data layer. Status home: `memory/primer.md` (current) + `planning/progress.md` (in-flight).
+- 2026-09-28: plan v1 approved; S0 scaffold + S1 data layer merged (`snapshot` CLI live, 99 tests); S2 scoring in flight.
+- Next: S2 review + ultra gate, then S3 output. Status home: `memory/primer.md` (current) + `planning/progress.md` (in-flight).
 
 ## Key Decisions (ADRs)
 - Separate repo from `portfolio-lab` — that one is a holdings tracker; this is a rating engine. Lessons reused, code not.
