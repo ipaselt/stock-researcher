@@ -134,3 +134,32 @@ def test_sparse_otc_company(fake_provider):
     assert snap.events.news == [] and snap.events.next_earnings_date is None
     assert snap.analyst.target_mean is None
     assert from_json(to_json(snap)) == snap
+
+
+def test_aapl_fiscal_year_pe_hand_computed(aapl):
+    # Literals from tests/fixtures/AAPL_history.csv (Close) and AAPL_income_stmt.json (Diluted EPS).
+    # FY2023 ends Sat 2023-09-30 -> the Fri 2023-09-29 close; FY2021 Diluted EPS is NaN -> skipped.
+    assert aapl.valuation.fiscal_year_pe == pytest.approx([
+        253.69287 / 7.46,  # FY2025: 34.01
+        231.06708 / 6.08,  # FY2024: 38.00
+        168.92528 / 6.13,  # FY2023: 27.56
+        135.55164 / 6.11,  # FY2022: 22.19
+    ])
+    assert "valuation.fiscal_year_pe" not in aapl.meta.fields_missing  # a list, not a scalar
+
+
+def test_fiscal_year_pe_none_without_positive_eps(fake_provider):
+    assert build_snapshot(fake_provider, "RIVN", as_of=AS_OF).valuation.fiscal_year_pe is None  # EPS all < 0
+    assert build_snapshot(fake_provider, "HCMC", as_of=AS_OF).valuation.fiscal_year_pe is None  # EPS 0 or < 0
+
+
+def test_fiscal_year_pe_skips_years_before_history():
+    import pandas as pd
+
+    from stock_researcher.snapshot import fiscal_year_pe
+
+    close = pd.Series([40.0, 50.0], index=pd.to_datetime(["2024-12-31", "2025-12-31"]))
+    income = pd.DataFrame({pd.Timestamp("2025-12-31"): [5.0], pd.Timestamp("2024-12-31"): [4.0],
+                           pd.Timestamp("2023-12-31"): [2.0]}, index=["Diluted EPS"])
+    assert fiscal_year_pe(close, income) == [10.0, 10.0]
+    assert fiscal_year_pe(pd.Series(dtype=float), income) == []
