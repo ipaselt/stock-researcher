@@ -9,6 +9,7 @@ from stock_researcher.report import AGENTS, OPTIONAL_AGENTS
 CLAUDE = Path(__file__).parent.parent / ".claude"
 AGENT_DIR = CLAUDE / "agents"
 COMMAND = CLAUDE / "commands" / "research.md"
+CONTRACT_SPEC = CLAUDE.parent / "planning" / "research" / "agent-contract.md"
 AGENT_FILES = sorted(AGENT_DIR.glob("*.md"))
 HARD_RULES = ("Cite, never compute", "Units:", "Scope:", "No fetching", "Write exactly one file")
 BASE_TOOLS = {"Read", "Write"}
@@ -75,12 +76,29 @@ def test_shared_body_identical_across_agents():
     assert not diverged, f"shared contract diverges from valuation.md in: {diverged}"
 
 
+def spec_shared_body() -> str:
+    """The spec's "Shared body" section, with its 3-backtick outer output-format fence widened to 4 (as the agent files
+    carry it, so the nested ```json fence renders)."""
+    spec = CONTRACT_SPEC.read_text(encoding="utf-8")
+    body = spec.split("## Shared body (verbatim in every agent)\n", 1)[1].split("\n## Per-agent Focus blocks", 1)[0]
+    body = body.replace("**Output file format** (`data/<T>/<your-name>.md`)\n```\n",
+                        "**Output file format** (`data/<T>/<your-name>.md`)\n````\n", 1)
+    return body.replace("```\n```\n`numbers_cited`", "```\n````\n`numbers_cited`", 1).strip()
+
+
+def test_shared_body_matches_spec():
+    agent = shared_body(split_frontmatter(AGENT_DIR / "valuation.md")[1]).strip()
+    assert agent == spec_shared_body(), "valuation.md shared contract drifted from planning/research/agent-contract.md"
+
+
 def test_research_command():
     fields, body = split_frontmatter(COMMAND)
     assert fields["description"]
     assert fields["argument-hint"] == "[TICKER]"
     assert "stock_researcher" in fields["allowed-tools"]
-    for word in ("run", "verify-citations", "assemble", "verdict.md", "$ARGUMENTS"):
+    assert fields["disable-model-invocation"] == "true"
+    for word in ("stock_researcher run", "stock_researcher verify-citations", "stock_researcher assemble",
+                 "reports/ratings.csv", "verdict.md", "$ARGUMENTS"):
         assert word in body, f"research.md body missing {word!r}"
     missing = [a for a in AGENTS if f"`{a}`" not in body]
     assert not missing, f"research.md does not name agents: {missing}"

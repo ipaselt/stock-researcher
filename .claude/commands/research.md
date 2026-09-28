@@ -1,6 +1,7 @@
 ---
 description: Research and rate one US-listed stock — snapshot, scorecard, five Opus analysts, planner verdict, report, ledger
 argument-hint: [TICKER]
+disable-model-invocation: true
 allowed-tools: Bash(.venv/Scripts/python.exe -m stock_researcher:*), Bash(git add:*), Bash(git commit:*), Bash(git rev-parse:*), Read, Write, Agent
 ---
 
@@ -22,10 +23,12 @@ skip the citation check; do not write more than the verdict file yourself.
    `data/T/<agent>.md`. Wait for all five.
 5. **Citation check.** Run `.venv/Scripts/python.exe -m stock_researcher verify-citations T`. For each agent it
    reports as FAIL (a cited number absent from the JSON or off by more than 1%), re-dispatch that agent once with
-   the failure lines quoted; if it fails again, delete its file so the report marks it "did not report".
+   the failure lines quoted; if it fails again, overwrite its file with empty content using Write (an empty agent
+   file counts as "did not report").
    (Until S5 lands this command prints "not implemented" — then skip this step and say so in the verdict.)
 6. **Bear case (optional).** If the suggested label is BUY or the owner asked for it, dispatch `bear-case` with the
-   snapshot path and the five agent files; wait.
+   absolute paths of `data/T.json` and `data/T.score.json`, the suggested label and rule id, and the five agent
+   files; wait.
 7. **Verdict.** Read the five (six) agent files' `### Assessment` paragraphs and JSON blocks — nothing more. Write
    `data/T/verdict.md`:
    ```
@@ -45,9 +48,11 @@ skip the citation check; do not write more than the verdict file yourself.
    ```
    Confirm the suggested label unless an agent finding or a data gap gives a specific, cited reason to override.
    `entry_target` = the score's `entry_price` for WAIT / HAS RUN / BUY, else `none`.
+   If the suggested rule was L5 (no fair value) and you override to WAIT or BUY, `entry_target` must be `none`
+   (never `null`) unless you cite a price from an agent finding.
 8. **Assemble.** `.venv/Scripts/python.exe -m stock_researcher assemble T` → `reports/T-<date>.md` and the rebuilt
    `reports/ratings.csv`.
-9. **Commit the report** (markdown only): `git add reports/T-<date>.md && git commit -m "research: T <label_final> (<date>)"`.
+9. **Commit the report** (markdown only): `git add reports/T-<date>.md && git commit -m "research: T <label_final> (<date>)" -- reports/T-<date>.md`.
    Do not commit `data/` or `ratings.csv` (both are regenerated).
 10. **Summarize in five lines:** label (and whether it overrode the rule), score + band + coverage, fair value + entry
     target, the one-sentence thesis, the report path.
