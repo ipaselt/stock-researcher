@@ -9,7 +9,7 @@
 description: Research and rate one US-listed stock — snapshot, scorecard, five Opus analysts, planner verdict, report, ledger
 argument-hint: [TICKER]
 disable-model-invocation: true
-allowed-tools: Bash(.venv/Scripts/python.exe -m stock_researcher:*), Bash(git add:*), Bash(git commit:*), Bash(git rev-parse:*), Read, Write, Agent
+allowed-tools: Bash(.venv/Scripts/python.exe -m stock_researcher:*), Bash(git add:*), Bash(git commit:*), Bash(git rev-parse:*), Bash(git push:*), Read, Write, Agent
 ---
 ```
 
@@ -65,6 +65,7 @@ skip the citation check; do not write more than the verdict file yourself.
    `reports/ratings.csv`.
 9. **Commit the report** (markdown only): `git add reports/T-<date>.md && git commit -m "research: T <label_final> (<date>)" -- reports/T-<date>.md`
    (pathspec-scoped so nothing else already staged rides along).
+   Then `git push origin main` — the website deploys from `main`, so an unpushed report is invisible.
    Do not commit `data/` or `ratings.csv` (both are regenerated).
 10. **Summarize in five lines:** label (and whether it overrode the rule), score + band + coverage, fair value + entry
     target, the one-sentence thesis, the report path.
