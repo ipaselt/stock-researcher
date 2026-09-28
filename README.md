@@ -3,9 +3,9 @@
 A stock research and rating engine for US-listed common stocks, built like a small research firm. A
 deterministic Python core pulls market data, normalizes it into a typed snapshot, grades it on an 18-metric
 weighted scorecard, derives an earnings-based fair value and entry price, and suggests a label (BUY, WAIT,
-HAS RUN, SELL, NOT LOOKING) by eight documented rules. On top of that, a planned Claude Code
-`/research <TICKER>` command (arriving with the agent slice) fans out to five specialist research agents and
-lets a planner write the final verdict.
+HAS RUN, SELL, NOT LOOKING) by eight documented rules. On top of that, a Claude Code
+`/research <TICKER>` command fans out to five specialist research agents and lets a planner write the final
+verdict.
 
 The design goal is a rating that is both reproducible and defensible: every number in a report comes from
 code with tests, every threshold is written down in `docs/` (and a test fails if the docs drift from the
@@ -50,11 +50,20 @@ the score is not trusted. The full band table and the special cases are in
 
 ## Research agents
 
-The research agents arrive with the agent slice; the design is fixed. Each agent reads only the snapshot and score files and may cite only numbers present there (with
+Each agent reads only the snapshot and score files and may cite only numbers present there (with
 the key in parentheses), so the agents interpret rather than compute. Each writes one markdown file into a
 fixed slot of the report skeleton, keeping the planner's context small: it reads the scores and short agent
 summaries and writes a ~150-word verdict. `assemble` stitches everything together mechanically, and the
 ledger keeps both the rule-suggested and the final label.
+
+## Research flow
+
+Open Claude Code in the repo root and run `/research <TICKER>` (`.claude/commands/research.md`). It runs
+`run` for the snapshot, score and skeleton, then dispatches five Opus analysts in parallel (valuation,
+growth-quality, balance-sheet-risk, technicals, news-catalysts; definitions in `.claude/agents/`), each
+writing `data/<T>/<agent>.md`. A citation check follows (`verify-citations`, a stub until slice S5), then an
+optional bear-case agent. The planner writes `data/<T>/verdict.md` confirming or overriding the suggested
+label, `assemble` produces `reports/<T>-<date>.md` and rebuilds the ledger, and the report is committed.
 
 ## Disclaimer
 
