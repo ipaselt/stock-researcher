@@ -24,9 +24,14 @@
   **Gotcha:** project agents/commands register only in a session rooted INSIDE `projects/stock-researcher/`;
   from the dev-root planner session, dispatch them as `general-purpose` + `model: opus` with "read your role
   file first" (what the first live AAPL pass did).
-- **First live research pass done 2026-09-28**: `reports/AAPL-2026-09-28.md` — HAS RUN (L7) confirmed, entry
-  250.80; all five analysts agreed; the end-to-end flow works. Verdict is ~150 planner words; agents wrote
-  their own files. **S5 guards dispatched** (verify-citations, retry, `--offline`, live canaries).
+- **S5 guards merged 2026-09-28 (PR #5, e578465)**: `verify-citations` is the hallucination guard (JSON block +
+  window-wide prose numbers + uncited-number rule; agent contract v1.1 = same-sentence citations, signs as
+  stored); `run --offline`; provider retry; `pytest -m live` canaries (NVDA fiscal-year P/E split-consistent).
+  548 offline tests.
+- **AAPL report citation-verified 2026-09-28** (`reports/AAPL-2026-09-28.md`, 2b1f4db): HAS RUN (L7), entry
+  250.80, `citation check: PASS (5/5)`. Lesson: agents written under v1.0 fail v1.1 on uncited numbers; one
+  re-dispatch with the failure lines fixes it.
+- **S6 polish dispatched 2026-09-28** (last planned slice).
 
 ## Verified facts (don't re-derive)
 - yfinance 1.5.1 live AAPL run 2026-09-28: every planned metric present except `ytdReturn` (fund field →

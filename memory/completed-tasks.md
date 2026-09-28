@@ -2,6 +2,16 @@
 
 *(The planner moves merged tasks here from `../planning/progress.md`.)*
 
+- ✅ **research: AAPL (re-verify)** — 2026-09-28 (2b1f4db). Under contract v1.1 three analysts failed the
+  citation check (uncited numbers; one mis-windowed citation); re-dispatched once with the failure lines, all
+  five PASS; report re-assembled with `citation check: PASS (5/5 agents)`. Label unchanged: HAS RUN (L7).
+- ✅ **#5** S5 Guards — 2026-09-28, PR #5 merged (e578465). `verify-citations` (JSON block strict 1%; prose:
+  window-wide numbers before each citation, unit-normalised, uncited decimal/unit numbers FAIL, reason/flags
+  checked), `citations.json` → report appendix, `assemble` withholds FAIL sections; provider retry 1s/2s (incl.
+  empty history); `run --offline`; `test_live.py` (AAPL canary, NVDA split-consistency PASSED: fiscal-year P/E
+  38.9/40.7/51.6/111.9, unknown ticker). Agent contract v1.1 (same-sentence citations, signs as stored);
+  command re-verifies after the bear case. 548 tests. Review: 3 MAJORs on the guard closed; round-2 ×1.5
+  mutation loop 100% caught.
 - ✅ **research: AAPL** — 2026-09-28, first live pass (S4 acceptance). `run` → five Opus analysts (dispatched as
   general-purpose + role file from the dev-root session) → planner verdict → `assemble` → `reports/AAPL-2026-09-28.md`
   (04d1a76), ledger 1 row. Result: 60.1 / good / 94% / HAS RUN (L7) confirmed, entry 250.80. No assembly

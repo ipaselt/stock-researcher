@@ -15,7 +15,7 @@
 - ⏳ **#3** S3 Output — report skeleton + `assemble` + front-matter + derived ledger + `run` CLI + docs (scorecard/fair-value/labels/README) · **owner:** unassigned · branch `s3-output`
 - ⏳ **#4** S4 Agents + command — five Opus agent files + shared contract + `.claude/commands/research.md`; first live `/research AAPL` · **owner:** unassigned · branch `s4-agents`
 - ⏳ **#5** S5 Guards — `verify-citations`, bear-case agent, provider retry/backoff, `--offline`, `test_live.py` · **owner:** unassigned · branch `s5-guards` · **also (from the S2 review):** one live check that `fiscal_year_pe` is split-consistent — closes are split-adjusted, so confirm Yahoo's annual Diluted EPS is restated for a split inside the 5y window (NVDA 2024 split); if not, adjust EPS by the split factor or drop that year. And: `score` on a snapshot written before S2 (no `fiscal_year_pe`) silently falls back to the sector P/E — have `run` always regenerate the snapshot first.
-- ⏳ **#6** S6 Resume polish — sample report committed, README walkthrough, console score table · **owner:** unassigned · branch `s6-polish`
+- ⏳ **#6** S6 Resume polish + guard follow-ups — sample report (citation-clean AAPL) committed, README walkthrough, console score table · **guard follow-ups from the S5 review:** decimal version numbers false-positive (`iOS 26.1`), plain-integer claims unchecked (`RSI is 86`), the word `percent` not a unit, multi-key parenthesis should match numbers to keys one-to-one, `NOISE_RE` unpinned by tests, integer ranges `12-38x` skip the lower bound · **owner:** unassigned · branch `s6-polish`
 
 ## Deferred (phase 3, not planned in detail)
 - Paid provider (FMP / Polygon) behind the same Protocol · batch mode · dashboard.
