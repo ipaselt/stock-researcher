@@ -54,7 +54,11 @@ def cmd_score(ticker: str) -> int:
     if not src.exists():
         print(f"no snapshot at {src.as_posix()}; run `snapshot {ticker}` first", file=sys.stderr)
         return 2
-    snapshot = from_json(src.read_text(encoding="utf-8"))
+    try:
+        snapshot = from_json(src.read_text(encoding="utf-8"))
+    except (ValueError, TypeError) as err:
+        print(f"unreadable snapshot {src.as_posix()}: {err}", file=sys.stderr)
+        return 2
     score = score_snapshot(snapshot)
     fv = compute_fair_value(snapshot, score.total)
     label = suggest_label(score, fv, snapshot)

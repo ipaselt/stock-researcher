@@ -1,9 +1,12 @@
 import pandas as pd
 import pytest
 
-from stock_researcher.fair_value import (DEFAULT_PE, SECTOR_DEFAULT_PE, compute_fair_value, historical_median_pe,
-                                         margin_of_safety, median_pe)
-from stock_researcher.snapshot import Snapshot
+from stock_researcher.fair_value import DEFAULT_PE, SECTOR_DEFAULT_PE, compute_fair_value, margin_of_safety, median_pe
+from stock_researcher.snapshot import Snapshot, fiscal_year_pe
+
+
+def historical_median_pe(close, income):
+    return median_pe(fiscal_year_pe(close, income))
 
 
 def _snapshot(eps=10.0, pes=None, sector="Technology", price=200.0) -> Snapshot:
@@ -73,12 +76,32 @@ def test_historical_median_pe_year_counts(years, expected):
     assert historical_median_pe(close, income) == expected
 
 
-@pytest.mark.parametrize("eps", [None, 0.0, -1.5])
-def test_nonpositive_or_missing_forward_eps_has_no_fair_value(eps):
+@pytest.mark.parametrize("eps, reason", [(None, "forward EPS missing"), (float("nan"), "forward EPS missing"),
+                                         (0.0, "forward EPS 0.00 <= 0"), (-1.5, "forward EPS -1.50 <= 0")])
+def test_nonpositive_or_missing_forward_eps_has_no_fair_value(eps, reason):
     fv = compute_fair_value(_snapshot(eps=eps, pes=[20, 20, 20]), 80)
     assert fv.fair_value is None and fv.entry_price is None and fv.upside is None
     assert fv.band_low is None and fv.band_high is None
-    assert fv.reason == "forward EPS missing or <= 0"
+    assert fv.reason == reason
+
+
+def test_earnings_yield_exactly_1pct_is_computed():
+    fv = compute_fair_value(_snapshot(eps=1.0, pes=[20, 20, 20], price=100.0), 80)  # forward P/E exactly 100
+    assert fv.fair_value == pytest.approx(20) and fv.reason is None
+
+
+def test_earnings_yield_below_1pct_has_no_fair_value():
+    fv = compute_fair_value(_snapshot(eps=0.999, pes=[20, 20, 20], price=100.0), 80)
+    assert fv.fair_value is None and fv.entry_price is None
+    assert fv.reason == ("forward earnings yield 1.00% below 1% (forward P/E > 100): "
+                         "earnings-based fair value not meaningful")
+    fv = compute_fair_value(_snapshot(eps=0.5, pes=[20, 20, 20], price=100.0), 80)
+    assert fv.reason.startswith("forward earnings yield 0.50% below 1%")
+
+
+def test_earnings_yield_floor_skipped_without_price():
+    fv = compute_fair_value(_snapshot(eps=0.01, pes=[20, 20, 20], price=None), 80)
+    assert fv.fair_value == pytest.approx(0.2) and fv.upside is None
 
 
 @pytest.mark.parametrize("score, mos", [(100, 0.05), (75, 0.05), (74.9, 0.15), (60, 0.15), (59.9, 0.20),

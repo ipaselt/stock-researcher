@@ -4,7 +4,9 @@ fair_value = forward_eps x fair_pe, where fair_pe is the median year-end P/E ove
 (positive-EPS years only; needs >= 3 of them), else the per-sector default in SECTOR_DEFAULT_PE (18 for an
 unknown sector). The source is recorded. Band: fair_value x (1 -/+ BAND). Margin of safety is tiered by the
 scorecard total: >= 75 -> 5%, 60-74 -> 15%, < 60 or no score -> 20%; entry_price = fair_value x (1 - mos).
-Forward EPS missing or <= 0 -> no fair value, with the reason.
+Forward EPS missing or <= 0 -> no fair value, with the reason. Near-zero earnings: a forward earnings
+yield (forward_eps / price) below MIN_EARNINGS_YIELD (1%, i.e. forward P/E > 100) -> no fair value either;
+exactly 1% is still computed. Without a price this floor is skipped.
 
 Stated limits (copied into every report):
 - Banks and insurers are valued on book value (P/B), not earnings; this method is the wrong lens for them.
@@ -13,15 +15,13 @@ Stated limits (copied into every report):
 - The historical median anchors to the past rate regime; a structurally different rate world shifts fair P/E.
 - Consensus forward EPS can be stale or wrong; the fair value inherits that error one-for-one.
 - Year-end P/E uses dividend-adjusted closes, which slightly understate older years' P/E.
-- Pre-profit companies get no fair value at all (forward EPS <= 0).
+- Pre-profit and near-zero-earnings companies (forward P/E > 100) get no fair value at all.
 """
 import math
 import statistics
 from dataclasses import dataclass
 
-import pandas as pd
-
-from .snapshot import fiscal_year_pe, safe_div
+from .snapshot import safe_div
 
 SECTOR_DEFAULT_PE = {
     "Technology": 25,
@@ -41,6 +41,7 @@ MIN_YEARS, MAX_YEARS = 3, 5
 BAND = 0.15
 MOS_TIERS = ((75, 0.05), (60, 0.15))  # (min score, margin of safety), best first
 MOS_DEFAULT = 0.20
+MIN_EARNINGS_YIELD = 0.01  # forward_eps / price below this (forward P/E > 100) -> no earnings-based fair value
 
 
 @dataclass
@@ -65,11 +66,6 @@ def median_pe(pes: list[float] | None) -> tuple[float | None, int]:
     return (statistics.median(usable) if n >= MIN_YEARS else None), n
 
 
-def historical_median_pe(history_close: pd.Series, income_stmt: pd.DataFrame) -> tuple[float | None, int]:
-    """Median year-end P/E from a close series and an annual income statement (see snapshot.fiscal_year_pe)."""
-    return median_pe(fiscal_year_pe(history_close, income_stmt))
-
-
 def margin_of_safety(score_total: float | None) -> float:
     if score_total is not None:
         for min_score, mos in MOS_TIERS:
@@ -86,9 +82,19 @@ def compute_fair_value(snapshot, score_total: float | None) -> FairValue:
     else:
         fair_pe, source = SECTOR_DEFAULT_PE.get(snapshot.meta.sector, DEFAULT_PE), "sector_default"
     mos = margin_of_safety(score_total)
-    if eps is None or not math.isfinite(eps) or eps <= 0:
-        return FairValue(eps, fair_pe, source, n, None, None, None, mos, None, None, "forward EPS missing or <= 0")
-    fv = eps * fair_pe
     price = snapshot.meta.price
-    upside = None if price is None or price <= 0 else safe_div(fv, price) - 1
+    if price is not None and price <= 0:
+        price = None
+    reason = None
+    if eps is None or not math.isfinite(eps):
+        reason = "forward EPS missing"
+    elif eps <= 0:
+        reason = f"forward EPS {eps:.2f} <= 0"
+    elif price is not None and eps / price < MIN_EARNINGS_YIELD:
+        reason = (f"forward earnings yield {eps / price:.2%} below 1% (forward P/E > 100): "
+                  "earnings-based fair value not meaningful")
+    if reason:
+        return FairValue(eps, fair_pe, source, n, None, None, None, mos, None, None, reason)
+    fv = eps * fair_pe
+    upside = None if price is None else safe_div(fv, price) - 1
     return FairValue(eps, fair_pe, source, n, fv, fv * (1 - BAND), fv * (1 + BAND), mos, fv * (1 - mos), upside, None)

@@ -17,7 +17,7 @@ def _case(total=70.0, coverage=1.0, health=80.0, fair_value=100.0, mos=0.15, pri
                         {"health": CategoryScore(health, 0.0 if health is None else 1.0)}, [])
     if fair_value is None:
         fv = FairValue(-1.0, 20, "sector_default", 0, None, None, None, mos, None, None,
-                       "forward EPS missing or <= 0")
+                       "forward EPS -1.00 <= 0")
     else:
         fv = FairValue(fair_value / 20, 20, "sector_default", 0, fair_value, fair_value * 0.85, fair_value * 1.15,
                        mos, fair_value * (1 - mos), None, None)
@@ -81,7 +81,7 @@ def test_l4_boundary_55_passes():
 def test_l5_no_fair_value():
     s = _case(fair_value=None)
     assert (s.label, s.rule_id, s.entry_target) == ("NOT LOOKING", "L5", None)
-    assert "forward EPS missing or <= 0" in s.reason and "planner may override for growth names" in s.reason
+    assert s.reason == "no fair value (forward EPS -1.00 <= 0); planner may override for growth names"
 
 
 @pytest.mark.parametrize("price", [85.0, 60.0])
@@ -150,3 +150,22 @@ def test_l3_needs_fair_value():
 def test_l6_beats_l7_momentum():
     # L6 and L7 cannot overlap on price (entry < fair value < high band); momentum never blocks a BUY.
     assert _case(price=80.0, from_high=0.0, ret_1y=1.0).rule_id == "L6"
+
+
+# --- boundaries ---
+
+def test_price_equal_to_band_high_triggers_neither_l3_nor_l7():
+    score = ScoreResult(40.0, "weak", 1.0, {"health": CategoryScore(80.0, 1.0)}, [])
+    fv = FairValue(5.0, 20, "sector_default", 0, 100.0, 85.0, 115.0, 0.15, 85.0, None, None)
+    snap = Snapshot()
+    snap.meta.price = 115.0
+    snap.technical.pct_from_52w_high = 0.0
+    snap.performance.return_1y = 1.0
+    assert suggest_label(score, fv, snap).rule_id == "L4"  # not L3
+    score.total = 70.0
+    assert suggest_label(score, fv, snap).rule_id == "L8"  # not L7
+
+
+def test_total_exactly_45_above_band_is_l4_not_l3():
+    s = _case(total=45.0, price=200.0)
+    assert (s.label, s.rule_id) == ("NOT LOOKING", "L4")

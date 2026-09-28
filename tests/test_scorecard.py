@@ -33,6 +33,34 @@ def _metric(result, field):
     return next(r for r in result.metrics if r.field == field)
 
 
+# The approved plan table, pinned literally: (category, field, weight, A, B, C, D, higher_is_better, a_cap).
+GOLDEN = [
+    ("valuation", "valuation.forward_pe", 10, 15, 22, 30, 45, False, None),
+    ("valuation", "valuation.peg", 8, 1.0, 1.5, 2.5, 4.0, False, None),
+    ("valuation", "valuation.ev_ebitda", 6, 10, 15, 22, 30, False, None),
+    ("valuation", "valuation.fcf_yield", 6, 0.06, 0.04, 0.025, 0.01, True, None),
+    ("growth", "growth.revenue_growth_yoy", 6, 0.20, 0.12, 0.06, 0.0, True, None),
+    ("growth", "growth.revenue_cagr_3y", 6, 0.15, 0.10, 0.05, 0.0, True, None),
+    ("growth", "growth.earnings_growth_yoy", 4, 0.20, 0.10, 0.03, -0.10, True, None),
+    ("growth", "growth.eps_cagr_3y", 4, 0.15, 0.10, 0.05, 0.0, True, None),
+    ("profitability", "profitability.gross_margin", 4, 0.55, 0.40, 0.30, 0.20, True, None),
+    ("profitability", "profitability.operating_margin", 6, 0.25, 0.15, 0.10, 0.05, True, None),
+    ("profitability", "profitability.roe", 6, 0.25, 0.15, 0.10, 0.05, True, None),
+    ("profitability", "profitability.fcf_margin", 4, 0.20, 0.12, 0.06, 0.0, True, None),
+    ("health", "health.debt_to_equity", 6, 0.3, 0.7, 1.2, 2.0, False, None),
+    ("health", "health.current_ratio", 4, 2.0, 1.5, 1.0, 0.8, True, None),
+    ("health", "health.interest_coverage", 6, 15, 8, 4, 1.5, True, None),
+    ("health", "health.cash_to_debt", 4, 1.0, 0.5, 0.25, 0.1, True, None),
+    ("momentum", "performance.rel_1y", 5, 0.15, 0.05, -0.05, -0.15, True, None),
+    ("momentum", "technical.price_vs_sma200", 5, 0.0, -0.05, -0.15, -0.25, True, 0.20),
+]
+
+
+def test_metrics_match_the_golden_plan_table():
+    actual = [(m.category, m.field, m.weight, *m.bands, m.higher_is_better, m.a_cap) for m in METRICS]
+    assert actual == GOLDEN
+
+
 def test_weights_sum_to_100():
     assert sum(m.weight for m in METRICS) == 100
     assert CATEGORY_WEIGHTS == {"valuation": 30, "growth": 20, "profitability": 20, "health": 20, "momentum": 10}
@@ -193,3 +221,13 @@ def test_points_follow_grade_points():
     result = score_snapshot(_snapshot({"valuation.forward_pe": 25}))  # C
     r = _metric(result, "valuation.forward_pe")
     assert r.grade == "C" and r.points == GRADE_POINTS["C"] == 5 and r.weight == 10 and r.value == 25
+
+
+def test_zero_debt_to_equity_is_a_and_covered():
+    r = _metric(score_snapshot(_snapshot({"health.debt_to_equity": 0.0})), "health.debt_to_equity")
+    assert r.grade == "A" and r.covered and r.note is None
+
+
+def test_negative_equity_skip_only_below_zero():
+    r = _metric(score_snapshot(_snapshot({"health.debt_to_equity": -1e-9})), "health.debt_to_equity")
+    assert not r.covered and r.note == "negative equity"
