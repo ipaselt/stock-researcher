@@ -300,7 +300,6 @@ def test_inflating_any_printed_decimal_fails(name, sources):
     "the 3-year and 1-5 year view of the S&P 500 in 2025, RSI(14) and 1 year: 23.1% (profitability.fcf_margin)",
     "a margin of 23.1% (profitability.fcf_margin), well above the 10 peers",  # trailing plain integer ignored
     "Revenue grew in 12 of the last 20 quarters.",               # plain integers in an uncited sentence
-    "sales of the iPhone 18 (profitability.fcf_margin)",         # a model number, not a claim
 ])
 def test_prose_passes_v11(prose):
     assert check_prose("a", prose, SRC) == []
@@ -361,15 +360,18 @@ def test_assemble_tolerates_wrong_shape_citations_json(tmp_cwd, run_dir, content
 # --- S6 follow-ups: version numbers, plain integers, ordered multi-key windows, ranges, NOISE_RE -----------
 
 S6 = {"snapshot": {**SRC["snapshot"], "analyst": {"target_low": 215.0, "target_high": 405.0},
-                   "valuation": {**SRC["snapshot"]["valuation"], "peg": 2.74, "ev_ebitda": 29.767}},
-      "score": SRC["score"]}
+                   "valuation": {**SRC["snapshot"]["valuation"], "peg": 2.74, "ev_ebitda": 29.767, "forward_pe": 35.49},
+                   "health": {**SRC["snapshot"]["health"], "debt_to_equity": 0.78},
+                   "performance": {"max_drawdown_1y": -0.138}, "meta": {"price": 340.15}},
+      "score": {**SRC["score"], "fair_value": {"n_years": 4, "fair_value": 295.06}}}
 
 
 @pytest.mark.parametrize("prose", [
     "It ships with iOS 26.1 and macOS 26.1 this fall.",               # decimal version numbers, uncited
     "The app moved to Version 2.0 and then v2.0.1 in the fall.",
-    "the iOS 26.1 cycle lifted margin to 23.1% (profitability.fcf_margin)",  # skipped inside a window too
     "41 analysts cover it.",                                          # an honest uncited integer
+    "Price is above the SMA 50 and the SMA 200.",                     # indicator periods, uncited
+    "the 14 RSI and the EMA 20 both look firm.",
     "targets span 215.0 to 405.0 (analyst.target_low, analyst.target_high)",
     "PEG of 2.74 (valuation.peg, valuation.ev_ebitda)",               # one number, the first key
     "a 22-34x range (valuation.fiscal_year_pe)",                      # both bounds in the list
@@ -385,7 +387,10 @@ def test_prose_passes_s6(prose):
     ("the EPS 9.59 print was fine.", 'a: uncited number 9.59 in: "the EPS 9.59 print was fine."'),
     ("Version 2.0 shipped.", 'a: uncited number 2.0 in: "Version 2.0 shipped."'),  # sentence start: a claim
     ("RSI is 86, overbought.", 'a: uncited number 86 in: "RSI is 86, overbought."'),
-    ("at 86 RSI it is stretched.", 'a: uncited number 86 in: "at 86 RSI it is stretched."'),
+    ("a PE of 86 is rich.", 'a: uncited number 86 in: "a PE of 86 is rich."'),
+    ("it posted 86 EPS.", 'a: uncited number 86 in: "it posted 86 EPS."'),
+    ("215.0-999.0 (analyst.target_low, analyst.target_high)", "a: analyst.target_high cited 999.0 vs 405 in snapshot"),
+    ("-5-10% (performance.max_drawdown_1y)", "a: performance.max_drawdown_1y cited -5% vs -13.8% in snapshot"),
     ("shares fell 7 percent.", 'a: uncited number 7% in: "shares fell 7 percent."'),
     ("targets span 405.0 to 215.0 (analyst.target_low, analyst.target_high)",
      "a: analyst.target_low cited 405.0 vs 215 in snapshot "
@@ -401,6 +406,20 @@ def test_prose_passes_s6(prose):
 ])
 def test_prose_fails_s6(prose, failure):
     assert check_prose("a", prose, S6)[0] == failure
+
+
+@pytest.mark.parametrize("prose, key", [  # names, versions and periods are never exempt inside a citation window
+    ("its D/E 7.80 (health.debt_to_equity)", "health.debt_to_equity"),
+    ("a forward PE 99.0 (valuation.forward_pe)", "valuation.forward_pe"),
+    ("the Fair Value 999.06 (fair_value.fair_value)", "fair_value.fair_value"),
+    ("shares of Apple 999.9 (meta.price)", "meta.price"),
+    ("a total Score 99.1 (total)", "total"),
+    ("the iOS 26.1 cycle lifted margin to 23.1% (profitability.fcf_margin)", "profitability.fcf_margin"),
+    ("sales of the iPhone 18 (profitability.fcf_margin)", "profitability.fcf_margin"),
+])
+def test_no_name_or_version_skip_inside_a_window(prose, key):
+    failures = check_prose("a", prose, S6)
+    assert len(failures) == 1 and failures[0].startswith(f"a: {key} cited ")
 
 
 def test_uncited_range_reports_both_bounds():

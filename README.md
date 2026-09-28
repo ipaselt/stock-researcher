@@ -107,9 +107,9 @@ Report: reports/AAPL-2026-09-28.md
 
 What each artifact on the way there is:
 
-- `data/AAPL.json` — the snapshot: every field normalized to a fraction or a multiple, plus the fields that
-  were missing and any warnings.
-- `data/AAPL.score.json` — the 18 graded metrics, the five category scores, the total and coverage, the fair
+- `data/AAPL.json` — the snapshot: every ratio normalized to a fraction or a multiple (prices, dollar
+  amounts, dates and text pass through), plus the fields that were missing and any warnings.
+- `data/AAPL.score.json` — the 18 metrics (grade, points, note; a skipped metric shows why), the five category scores, the total and coverage, the fair
   value with its method and inputs, and the suggested label with the rule that fired (`score AAPL --table`
   prints it as a table).
 - `data/AAPL/skeleton.md` — the report with the header, verdict table, scorecard and fair value already
@@ -143,7 +143,8 @@ What each artifact on the way there is:
   its key beside it, and `verify-citations` fails the agent on a wrong or dishonestly rounded value, an
   uncited decimal or percentage, an integer next to a metric word (`RSI is 86`), a range bound
   (`12-38x`), or numbers attributed to the wrong key when several keys share one parenthesis — so the report
-  cannot contain an invented number without the check saying so.
+  cannot contain an invented decimal, percentage, multiple or dollar amount without the check saying so; plain
+  integers away from metric words, unitless ranges and version numbers are the documented exemptions.
 
 ## Disclaimer
 

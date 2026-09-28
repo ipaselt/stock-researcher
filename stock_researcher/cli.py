@@ -179,6 +179,8 @@ def cmd_assemble(ticker: str, date: str | None) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    if hasattr(sys.stdout, "reconfigure"):  # an ASCII console prints `?` for an em dash instead of raising
+        sys.stdout.reconfigure(errors="replace")
     parser = argparse.ArgumentParser(prog="stock_researcher")
     parser.add_argument("--version", action="store_true", help="print version and exit")
     sub = parser.add_subparsers(dest="command")
