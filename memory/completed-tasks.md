@@ -2,6 +2,14 @@
 
 *(The planner moves merged tasks here from `../planning/progress.md`.)*
 
+- ✅ **#11** S11 Web — 2026-10-11, PR #7 merged (425d9c0). Static Next.js 16 site in `web/`: front-matter
+  parser with Python parity, index from report front-matter (ledger CSV is gitignored), `/`, `/reports/[slug]`,
+  `/methodology/[doc]`, OG images, all SSG (no `ƒ` routes); 16 vitest tests; `.claude/launch.json` (port 3001);
+  README "Website"; `/research` step 9 publishes via `/ship`. Review: SHIP-WITH-FIXES → fixed (push-step would
+  have been denied on a public repo; sub-dollar money; fence-aware cleanBody; BOM parity; doc-link fragments;
+  aria-pressed). Vercel project `stock-researcher` created via CLI (`vercel link` at the repo root,
+  `project update --root-directory web --framework nextjs --node-version 24.x`), GitHub-connected; first
+  production build green from the merge. Planning spec follow-up merged as PR #8.
 - ✅ **#6** S6 Polish + guard follow-ups — 2026-09-28, PR #6 merged (51afce6). Guard: version numbers, `percent`,
   integer-next-to-metric-word, ordered multi-key pairing, range bounds, NOISE_RE pinned, metric-word list
   extended; `score --table`; README walkthrough (sample report, a run step by step, design choices); agent

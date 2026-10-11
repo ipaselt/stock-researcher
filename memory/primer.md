@@ -28,6 +28,18 @@
 - Agents written under an older contract fail a stricter guard on uncited numbers; one re-dispatch with the
   failure lines quoted fixes them (happened twice today: v1.0→v1.1 for three agents, v1.1→v1.2 for one).
 
+- **Website shipped 2026-10-11 (S11, PR #7)**: `web/` Next.js static site; Vercel project `stock-researcher`
+  (team `ipaselt`, Root Directory `web`), auto-deploys on every push to `main`; production aliases
+  `stock-researcher-ipaselt.vercel.app` and `stock-researcher-phi.vercel.app`. **Go-live blocker:** Deployment
+  Protection covered production (aliases redirected to a Vercel login) — owner flips Vercel Authentication to
+  "Only Preview Deployments" in Project → Settings → Deployment Protection. Local preview: `stock-researcher-web`
+  launch config, port 3001 (`npm --prefix web run dev`; run `npm install` in `web/` first on a fresh clone).
+- **Push mechanics (hooks live now, jq on PATH):** the push guard checks the *current branch at hook time*, so
+  push a feature branch only after `git checkout` of it (or name the worktree with `git -C`), and never put the
+  phrase for pushing main inside a heredoc. The auto-mode classifier refuses to let the agent create the
+  `.review-ready` gate itself; for planner `.md` commits use a short-lived branch + PR (merge-gate accepts the
+  `reviewed-pass` label after the adversarial review) — what PR #8 did.
+
 ## Next
 Backlog in `planning/todo.md`: #7 guard follow-ups (RSI period exemption, unitless ranges in a window),
 #8 research a sparse small-cap and a pre-profit name from an in-project session, #9 optional ultra review.
