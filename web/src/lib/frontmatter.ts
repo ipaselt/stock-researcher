@@ -18,6 +18,7 @@ function unquote(value: string): string {
 }
 
 export function parseFrontMatter(text: string): FrontMatter | null {
+  if (text.startsWith("﻿")) return null; // Python parity: "﻿---".strip() != "---"
   const lines = text.split(/\r?\n/);
   if (lines[0]?.trim() !== "---") return null;
   const fields: Record<string, string | null> = {};

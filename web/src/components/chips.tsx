@@ -41,9 +41,12 @@ export function band(score: number): string {
 }
 
 const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+// Mirrors report.py fmt_money: below $1, 4 decimals so a sub-penny price does not print as $0.00.
+const USD_SUB = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 4 });
 
 export function fmtMoney(v: number | null): string {
-  return v == null ? "—" : USD.format(v);
+  if (v == null) return "—";
+  return Math.abs(v) < 1 ? USD_SUB.format(v) : USD.format(v);
 }
 
 export function fmtPct(c: number | null): string {

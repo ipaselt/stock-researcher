@@ -46,6 +46,10 @@ describe("parseFrontMatter", () => {
     expect(parseFrontMatter("---\nticker: AAA\n")).toBeNull();
   });
 
+  it("returns null on a leading BOM (Python parity)", () => {
+    expect(parseFrontMatter("﻿" + NVDA)).toBeNull();
+  });
+
   it("parses CRLF input", () => {
     const parsed = parseFrontMatter(NVDA.replace(/\n/g, "\r\n"));
     expect(parsed!.fields.override_reason).toBe(REASON);

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { fmtMoney } from "../components/chips";
 import { SLUG_RE, cleanBody, firstSentence, listReports, parseReport, slug } from "./reports";
 
 const DIR = path.join(__dirname, "..", "..", "test", "fixtures", "reports");
@@ -42,6 +43,14 @@ describe("parseReport", () => {
     expect(report.sections.map((s) => s.id)).toEqual(["verdict", "valuation", "synthesis"]);
   });
 
+  it("keeps lines inside code fences", () => {
+    const report = parseReport("AAA-2026-01-01", read("AAA-2026-01-01"))!;
+    expect(report.body).not.toContain("# AAA — Alpha Test Co.");
+    expect(report.body).toContain("```python\n# comment inside a fence\n## Valuation — AAA\nx = 1\n```");
+    expect(report.body.match(/^## Valuation — AAA$/gm)).toHaveLength(1); // only the fenced copy survives
+    expect(report.sections.map((s) => s.id)).toEqual(["verdict", "valuation"]);
+  });
+
   it("rejects a bad slug", () => {
     expect(parseReport("../etc", read("AAA-2026-01-01"))).toBeNull();
   });
@@ -61,5 +70,13 @@ describe("helpers", () => {
     expect(slug("News & Catalysts — NVDA")).toBe("news-catalysts-nvda");
     expect(firstSentence("One two. Three.")).toBe("One two.");
     expect(firstSentence("x".repeat(300)).length).toBeLessThanOrEqual(160);
+    expect(firstSentence("")).toBe("");
+  });
+
+  it("fmtMoney mirrors report.py fmt_money", () => {
+    expect(fmtMoney(0.0034)).toBe("$0.0034");
+    expect(fmtMoney(229.6099)).toBe("$229.61");
+    expect(fmtMoney(1234.5)).toBe("$1,234.50");
+    expect(fmtMoney(null)).toBe("—");
   });
 });

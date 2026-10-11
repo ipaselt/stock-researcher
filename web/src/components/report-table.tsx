@@ -24,6 +24,7 @@ export function ReportTable({ reports }: { reports: ReportMeta[] }) {
           <button
             key={l}
             type="button"
+            aria-pressed={filter === l}
             onClick={() => setFilter(l)}
             className={`${PILL} ${filter === l ? PILL_ON : PILL_OFF}`}
           >

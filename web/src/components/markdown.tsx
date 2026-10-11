@@ -5,8 +5,6 @@ import remarkGfm from "remark-gfm";
 import { GradeChip, LabelChip } from "@/components/chips";
 import { slug } from "@/lib/reports";
 
-export { slug };
-
 const LABEL_CELL = /^(BUY|WAIT|HAS RUN|SELL|NOT LOOKING)\b([\s\S]*)$/;
 
 function textOf(node: ReactNode): string {
@@ -60,8 +58,15 @@ const components: Components = {
     );
   },
   a: ({ node, href = "", children, ...props }) => {
-    const doc = /^\.\.\/docs\/([a-z-]+)\.md$/.exec(href);
-    if (doc) return <Link href={`/methodology/${doc[1]}`}>{children}</Link>;
+    const hash = href.indexOf("#");
+    const target = hash < 0 ? href : href.slice(0, hash);
+    const fragment = hash < 0 ? "" : href.slice(hash);
+    const doc = /^\.\.\/docs\/([a-z-]+)\.md$/.exec(target);
+    if (doc) return <Link href={`/methodology/${doc[1]}${fragment}`}>{children}</Link>;
+    // Any other repo-relative doc/markdown link has no page on the site: render its text only.
+    if (target.startsWith("../docs/") || (!/^[a-z]+:/i.test(target) && target.endsWith(".md"))) {
+      return <>{children}</>;
+    }
     if (/^https?:\/\//.test(href)) {
       return (
         <a {...props} href={href} target="_blank" rel="noreferrer">

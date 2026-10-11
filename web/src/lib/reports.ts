@@ -63,9 +63,13 @@ function num(v: string | null | undefined): number | null {
 /** Drop the H1 and the agents' own `## <Title> — TICKER` lines (the report already has a section H2). */
 export function cleanBody(body: string, ticker: string): string {
   const nested = new RegExp(`^## .+ — ${escapeRe(ticker)}\\s*$`);
+  let fenced = false;
   return body
     .split(/\r?\n/)
-    .filter((line) => !line.startsWith("# ") && !nested.test(line))
+    .filter((line) => {
+      if (line.startsWith("```")) fenced = !fenced;
+      return fenced || line.startsWith("```") || (!line.startsWith("# ") && !nested.test(line));
+    })
     .join("\n");
 }
 
@@ -150,10 +154,6 @@ export const DOCS = [
 
 export type Doc = { name: string; title: string; body: string };
 
-export function listDocs() {
-  return DOCS;
-}
-
 export function getDoc(name: string): Doc | null {
   const entry = DOCS.find((d) => d.name === name);
   if (!entry) return null;
@@ -164,6 +164,7 @@ export function getDoc(name: string): Doc | null {
 
 export function firstSentence(text: string): string {
   const first = text.split(/\.\s/)[0].trim();
+  if (!first) return "";
   const sentence = first.endsWith(".") ? first : `${first}.`;
   return sentence.length > 160 ? `${sentence.slice(0, 159).trimEnd()}…` : sentence;
 }
