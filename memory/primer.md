@@ -42,8 +42,11 @@
   `.review-ready` gate itself; for planner `.md` commits use a short-lived branch + PR (merge-gate accepts the
   `reviewed-pass` label after the adversarial review) — what PR #8 did.
 
+- **#10 fair-value sanity band merged 2026-10-11 (PR #10)**: `fair_value.sanity` + rule L5b (WAIT, no entry)
+  guards BUY only; HAS RUN on an untrusted fair value carries no entry target. The committed NVDA report predates
+  it (its rule said BUY; the planner overrode); a fresh `/research NVDA` would now suggest WAIT (L5b) outright.
+
 ## Next
 Backlog in `planning/todo.md`: #7 guard follow-ups (RSI period exemption, unitless ranges in a window),
-#8 research a sparse small-cap and a pre-profit name from an in-project session, #9 optional ultra review,
-#10 fair-value sanity band (found on the NVDA run).
+#8 research a sparse small-cap and a pre-profit name from an in-project session, #9 optional ultra review.
 Phase 3 ideas (paid provider, batch mode, dashboard) are deferred.
