@@ -96,6 +96,42 @@ def test_skeleton_without_fair_value():
     assert "| Entry target | — |" in text
 
 
+def test_skeleton_aapl_has_no_sanity_line(skeleton):
+    assert "Not trusted" not in skeleton and "not trusted" not in skeleton
+    assert "| Entry target | $250.80 |" in skeleton
+
+
+def test_skeleton_untrusted_fair_value():
+    snapshot = build_snapshot(FakeProvider(), "AAPL", as_of="2026-09-28")
+    snapshot.analyst.target_high = 290.0
+    snapshot.meta.price = 300.0  # below the high band 339.32, so the HAS RUN test cannot hold
+    score = score_snapshot(snapshot)
+    fv = compute_fair_value(snapshot, score.total)
+    label = suggest_label(score, fv, snapshot)
+    assert label.rule_id == "L5b"
+    text = render_skeleton(snapshot, score, fv, label)
+    assert "| Suggested label | WAIT (L5b) |" in text
+    assert "| Entry target | — (fair value not trusted) |" in text
+    assert "| Fair value | $295.06 (band $250.80 – $339.32) |" in text  # still reported
+    section = text.split("## Fair value and entry price\n")[1].split("\n## ")[0]
+    line = ("**Not trusted for the label:** fair value 295.06 (fair_value.fair_value) is above the highest analyst "
+            "target 290.00 (analyst.target_high)")
+    assert line in section
+    derivation, limits = section.split(report.LIMITS_HEADING)
+    assert "= **$250.80**" in derivation and derivation.index("= **$250.80**") < derivation.index(line)
+    assert line not in limits
+
+
+def test_skeleton_has_run_on_untrusted_fair_value_shows_no_entry():
+    snapshot = build_snapshot(FakeProvider(), "AAPL", as_of="2026-09-28")
+    snapshot.analyst.target_high = 290.0  # fixture price 341.655 is above the high band and near the 52w high
+    score = score_snapshot(snapshot)
+    fv = compute_fair_value(snapshot, score.total)
+    text = render_skeleton(snapshot, score, fv, suggest_label(score, fv, snapshot))
+    assert "| Suggested label | HAS RUN (L7) |" in text
+    assert "| Entry target | — (fair value not trusted) |" in text
+
+
 @pytest.mark.parametrize("field, value, expected", [
     ("profitability.gross_margin", 0.4868, "48.7%"),
     ("growth.earnings_growth_yoy", -0.1, "-10.0%"),

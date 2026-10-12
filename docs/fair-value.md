@@ -54,6 +54,27 @@ keeps this page in sync with its constants and its stated limits.
 With no fair value there is no entry price, and (if no earlier rule fires) label rule L5 returns NOT LOOKING (the planner may override
 it for a growth name, with a cited reason).
 
+## Sanity band
+
+A computed fair value is checked against the market's own numbers. The first failing check is recorded in
+`fair_value.sanity` (null when both pass) with the numbers it used and their keys:
+
+- (a) **Above every analyst.** Fair value above the highest analyst target (`analyst.target_high`, the
+  `SANITY_TARGET`), checked only when that target is a positive number.
+- (b) **Regime shift.** Fair P/E more than `SANITY_PE_RATIO` = 2x the market's forward P/E
+  (`valuation.forward_pe`), checked only when the forward P/E is a positive number. A historical median taken
+  from hyper-growth years can sit far above what the market now pays for the same earnings.
+
+Both comparisons are strict: a fair value exactly equal to the highest target, or a fair P/E exactly 2x the
+forward P/E, passes. Both apply whether the fair P/E is the historical median or the sector default.
+The band is deliberately one-sided: a fair value below `analyst.target_low` is not flagged, because a deflated
+fair value can only make L3 (SELL) or L7 (HAS RUN) fire, which errs toward caution.
+
+Nothing is clamped or hidden: the fair value, band, entry price and upside are still computed and printed, and
+the report adds a bold "Not trusted for the label" line with the reason. Label rule L5b then suggests WAIT with
+no entry target unless the HAS RUN test holds, so an untrusted fair value cannot trigger BUY (L6); the planner
+may cite an entry target from an agent finding.
+
 ## Stated limits
 
 These are printed in every report, read from the module docstring so the two cannot diverge.

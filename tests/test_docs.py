@@ -51,7 +51,7 @@ def test_scorecard_row_format_is_exercised():
     assert "| valuation | `valuation.forward_pe` | 10 | ≤ 15x |" in SCORECARD
 
 
-@pytest.mark.parametrize("rule", [f"L{i}" for i in range(1, 9)])
+@pytest.mark.parametrize("rule", [f"L{i}" for i in range(1, 9)] + ["L5b"])
 def test_labels_rule_ids(rule):
     assert f"| {rule} |" in LABELS
 
@@ -87,3 +87,18 @@ def test_fair_value_limits_verbatim():
     limits = fair_value.__doc__.split("Stated limits (copied into every report):", 1)[1].strip()
     assert limits.count("\n- ") >= 6
     assert limits in FAIR_VALUE
+
+
+def test_fair_value_sanity_band():
+    assert "## Sanity band" in FAIR_VALUE
+    assert f"`SANITY_PE_RATIO` = {fair_value.SANITY_PE_RATIO:g}x" in FAIR_VALUE
+    assert f"(`{fair_value.SANITY_TARGET}`, the\n  `SANITY_TARGET`)" in FAIR_VALUE
+    assert "`valuation.forward_pe`" in FAIR_VALUE and "Both comparisons are strict" in FAIR_VALUE
+    assert "still computed and printed" in FAIR_VALUE
+
+
+def test_labels_l5b_in_order():
+    rows = [line.split("|")[1].strip() for line in LABELS.splitlines() if line.startswith("| L")]
+    assert rows == ["L1", "L2", "L3", "L4", "L5", "L5b", "L6", "L7", "L8"]
+    assert f"more than {fair_value.SANITY_PE_RATIO:g}x `valuation.forward_pe`" in LABELS
+    assert "`analyst.target_high`" in LABELS and "planner may cite a target" in LABELS
