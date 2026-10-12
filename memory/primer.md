@@ -1,5 +1,5 @@
 # Primer — stock-researcher
-*Rewrite each session. Last updated: 2026-09-28 (end of the build day).*
+*Rewrite each session. Last updated: 2026-10-11 (website live).*
 
 ## State
 - **Plan v1 COMPLETE 2026-09-28** — stamped, built, and shipped in one day: six PRs (S1-S6) each built by an
@@ -23,8 +23,8 @@
   fiscal-year P/E 38.9 / 40.7 / 51.6 / 111.9 — no 10× jump).
 - `model: opus` in an agent frontmatter pins the sub-agent model; docs say cheaper sub-agent models "spend
   less" but do not state how plan limits are metered.
-- `jq` is missing on this machine: every `~/.claude/hooks` guard exits 0 silently and `isolation: worktree`
-  fails; review/merge gating is discipline. Fix: `winget install jqlang.jq`.
+- `jq` is on PATH via WinGet Links in sessions rooted here (it was absent from the dev-root session on
+  2026-09-28), so the guard hooks are live; check `which jq` at session start.
 - Agents written under an older contract fail a stricter guard on uncited numbers; one re-dispatch with the
   failure lines quoted fixes them (happened twice today: v1.0→v1.1 for three agents, v1.1→v1.2 for one).
 
@@ -44,5 +44,6 @@
 
 ## Next
 Backlog in `planning/todo.md`: #7 guard follow-ups (RSI period exemption, unitless ranges in a window),
-#8 research a sparse small-cap and a pre-profit name from an in-project session, #9 optional ultra review.
+#8 research a sparse small-cap and a pre-profit name from an in-project session, #9 optional ultra review,
+#10 fair-value sanity band (found on the NVDA run).
 Phase 3 ideas (paid provider, batch mode, dashboard) are deferred.
