@@ -49,7 +49,7 @@ skip the citation check; do not write more than the verdict file yourself.
    - what to watch and when (next earnings date if present)
    ```
    Confirm the suggested label unless an agent finding or a data gap gives a specific, cited reason to override.
-   `entry_target` = the score's `entry_price` for WAIT (L8) / HAS RUN / BUY, else `none`.
+   `entry_target` = the score's `label_suggestion.entry_target` (`none` when it is null — L5b, or HAS RUN on an untrusted fair value), unless you override and cite a price.
    If the suggested rule was L5 (no fair value) and you override to WAIT or BUY, `entry_target` must be `none`
    (never `null`) unless you cite a price from an agent finding.
    If the suggested rule was L5b (fair value not trusted), `entry_target` is `none` unless you cite a price from an agent finding (e.g. a moving average from technicals or the analyst mean target).
