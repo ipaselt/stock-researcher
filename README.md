@@ -95,9 +95,12 @@ $250.80 entry target. The planner confirmed the rule's label rather than overrid
 
 ## Website
 
+**Live: https://stock-researcher-ipaselt.vercel.app**
+
 Every committed report and the three methodology pages are published as a static Next.js site from `web/` on
 Vercel. It is built at deploy time from `reports/*.md` (front-matter drives the index) and `docs/*.md`: no live
-data, no API, no environment variables. Every push to `main` redeploys, so `/research` pushes its report commit.
+data, no API, no environment variables. Every push to `main` redeploys, so `/research` publishes its report commit
+through the review-gated `/ship` step.
 
 Run it locally (port 3001):
 
@@ -107,7 +110,8 @@ cd web && npm install && npm run dev
 
 Deploy on Vercel: Add New → Project → import this repository; set **Root Directory** to `web`; keep **"Include
 source files outside of the Root Directory"** on (the build reads `../reports` and `../docs`); framework preset
-Next.js; no environment variables. Deploy.
+Next.js; no environment variables. Deploy. If the `.vercel.app` URL redirects to a Vercel login, turn off
+**Require Log In** under Settings → Deployment Protection: "Standard Protection" exempts only custom domains.
 
 ## A run, step by step
 

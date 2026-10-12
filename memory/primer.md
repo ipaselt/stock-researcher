@@ -30,10 +30,12 @@
 
 - **Website shipped 2026-10-11 (S11, PR #7)**: `web/` Next.js static site; Vercel project `stock-researcher`
   (team `ipaselt`, Root Directory `web`), auto-deploys on every push to `main`; production aliases
-  `stock-researcher-ipaselt.vercel.app` and `stock-researcher-phi.vercel.app`. **Go-live blocker:** Deployment
-  Protection covered production (aliases redirected to a Vercel login) — owner flips Vercel Authentication to
-  "Only Preview Deployments" in Project → Settings → Deployment Protection. Local preview: `stock-researcher-web`
-  launch config, port 3001 (`npm --prefix web run dev`; run `npm install` in `web/` first on a fresh clone).
+  `stock-researcher-ipaselt.vercel.app` (public since 2026-10-11) and `stock-researcher-phi.vercel.app`.
+  Gotcha: Vercel's "Standard Protection" exempts only production *custom* domains, so the `.vercel.app` aliases
+  stayed behind a login until the owner turned "Require Log In" OFF in Project → Settings → Deployment
+  Protection. Stale "Error" deployments in the dashboard predate the Root Directory setting (Vercel tried to
+  build the repo root as a Python app). Local preview: `stock-researcher-web` launch config, port 3001
+  (`npm --prefix web run dev`; `npm install` in `web/` first on a fresh clone).
 - **Push mechanics (hooks live now, jq on PATH):** the push guard checks the *current branch at hook time*, so
   push a feature branch only after `git checkout` of it (or name the worktree with `git -C`), and never put the
   phrase for pushing main inside a heredoc. The auto-mode classifier refuses to let the agent create the
