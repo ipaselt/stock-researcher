@@ -16,7 +16,7 @@ fair value × 1.15 (the ±15% band from `fair-value.md`).
 | L3 | score below 45 **and** price above the fair-value high band | SELL |
 | L4 | score below 55 | NOT LOOKING |
 | L5 | no fair value (EPS missing, ≤ 0, or forward P/E > 100) | NOT LOOKING (the planner may override for growth names) |
-| L5b | fair value fails the sanity band (`fair_value.sanity` set: above `analyst.target_high`, or fair P/E more than 2x `valuation.forward_pe`) | WAIT, with no entry target (the planner may cite a target from an agent finding) |
+| L5b | fair value not trusted (`fair_value.sanity` set: above `analyst.target_high`, or fair P/E more than 2x `valuation.forward_pe`) **and** the HAS RUN test (L7's condition) does not hold | WAIT, with no entry target (the planner may cite a target from an agent finding) |
 | L6 | price at or below the entry price | BUY |
 | L7 | price above the fair-value high band **and** (within 5% of the 52-week high **or** 1-year return at or above 40%) | HAS RUN |
 | L8 | otherwise | WAIT, with the entry target |
@@ -29,9 +29,10 @@ Details that decide edge cases:
 - An unavailable price fails every price test (L3, L6, L7) and falls through to L8 (WAIT with the entry
   target).
 - L6, L7 and L8 carry the entry target (fair value × (1 − margin of safety)); L1-L5 and L5b carry none.
-- L5b comes after L5 and before L6: an untrusted fair value cannot trigger BUY or HAS RUN. L3 is unchanged;
-  an inflated fair value normally keeps the price below its high band, and a price above even that band is
-  above a lower true value too. The sanity checks are in [fair-value.md](fair-value.md#sanity-band).
+- L5b comes after L5 and before L6, and protects L6 only: an inflated fair value can only wrongly trigger
+  BUY. L7's condition is evaluated first and L5b steps aside when it holds; L3 and L7 are left to fire because
+  a price above an inflated high band is above the true one too. The sanity checks are in
+  [fair-value.md](fair-value.md#sanity-band).
 
 ## What each label means for the owner's process
 

@@ -1,9 +1,14 @@
+import dataclasses
+import json
+
 import pandas as pd
 import pytest
 
+from stock_researcher.citations import check_prose
+
 from stock_researcher.fair_value import (DEFAULT_PE, SANITY_PE_RATIO, SECTOR_DEFAULT_PE, compute_fair_value,
                                          margin_of_safety, median_pe)
-from stock_researcher.snapshot import Snapshot, fiscal_year_pe
+from stock_researcher.snapshot import Snapshot, fiscal_year_pe, to_json
 
 
 def historical_median_pe(close, income):
@@ -151,7 +156,7 @@ def test_sanity_fires_above_analyst_high_target_nvda():
 
 def test_sanity_fires_on_pe_ratio_alone():
     fv = _sane(eps=10.0, pes=(46.1,) * 3, price=146.0, target_high=None, forward_pe=14.6)
-    assert fv.sanity == ("fair P/E 46.1x (fair_value.fair_pe) is more than 2x the market's forward P/E 14.6x "
+    assert fv.sanity == ("fair P/E 46.1x (fair_value.fair_pe) is more than double the market's forward P/E 14.6x "
                          "(valuation.forward_pe): regime shift")
 
 
@@ -180,7 +185,7 @@ def test_sanity_checks_sector_default_too():
     assert fv.fair_pe_source == "sector_default" and fv.fair_value == pytest.approx(250)
     assert "analyst.target_high" in fv.sanity
     fv = _sane(eps=10.0, pes=None, price=100.0, target_high=None, forward_pe=12.0)
-    assert fv.sanity.startswith("fair P/E 25.0x (fair_value.fair_pe) is more than 2x")
+    assert fv.sanity.startswith("fair P/E 25.0x (fair_value.fair_pe) is more than double")
 
 
 def test_sanity_none_without_fair_value():
@@ -190,3 +195,23 @@ def test_sanity_none_without_fair_value():
 
 def test_sane_fair_value_passes():
     assert _sane(eps=10.0, pes=(20.0,) * 3, price=180.0, target_high=250.0, forward_pe=18.0).sanity is None
+
+
+def test_sanity_pe_ratio_is_double():
+    assert SANITY_PE_RATIO == 2  # check (b)'s reason says "double"; change both together
+
+
+def _sane_with_sources(**kwargs):
+    snap = _snapshot(eps=NVDA_EPS, pes=[NVDA_PE] * 3, price=229.61)
+    snap.analyst.target_high, snap.valuation.forward_pe = 515.0, 14.64
+    for key, value in kwargs.items():
+        setattr(snap.analyst if key == "target_high" else snap.valuation, key, value)
+    fv = compute_fair_value(snap, 87.2)
+    return fv, {"snapshot": json.loads(to_json(snap)), "score": {"fair_value": dataclasses.asdict(fv)}}
+
+
+@pytest.mark.parametrize("kwargs, start", [({}, "fair value 723.66"), ({"target_high": None}, "fair P/E 46.2x")])
+def test_sanity_reasons_pass_the_citation_check(kwargs, start):
+    fv, sources = _sane_with_sources(**kwargs)
+    assert fv.sanity.startswith(start)
+    assert check_prose("valuation", f"Not trusted for the label: {fv.sanity}.", sources) == []

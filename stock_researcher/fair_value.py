@@ -49,7 +49,7 @@ BAND = 0.15
 MOS_TIERS = ((75, 0.05), (60, 0.15))  # (min score, margin of safety), best first
 MOS_DEFAULT = 0.20
 MIN_EARNINGS_YIELD = 0.01  # forward_eps / price below this (forward P/E > 100) -> no earnings-based fair value
-SANITY_PE_RATIO = 2.0  # fair_pe strictly above this multiple of the market's forward P/E -> not trusted (regime shift)
+SANITY_PE_RATIO = 2.0  # the reason text says "double": fair_pe strictly above this multiple of the market's forward P/E -> not trusted (regime shift)
 SANITY_TARGET = "analyst.target_high"  # fair value strictly above this snapshot field -> not trusted
 
 
@@ -80,7 +80,7 @@ def sanity_check(fv: float, fair_pe: float, snapshot) -> str | None:
         return f"fair value {fv:.2f} (fair_value.fair_value) is above the highest analyst target {hi:.2f} ({SANITY_TARGET})"
     fpe = snapshot.valuation.forward_pe
     if _positive(fpe) and fair_pe > SANITY_PE_RATIO * fpe:
-        return (f"fair P/E {fair_pe:.1f}x (fair_value.fair_pe) is more than {SANITY_PE_RATIO:g}x the market's "
+        return (f"fair P/E {fair_pe:.1f}x (fair_value.fair_pe) is more than double the market's "
                 f"forward P/E {fpe:.1f}x (valuation.forward_pe): regime shift")
     return None
 

@@ -104,6 +104,7 @@ def test_skeleton_aapl_has_no_sanity_line(skeleton):
 def test_skeleton_untrusted_fair_value():
     snapshot = build_snapshot(FakeProvider(), "AAPL", as_of="2026-09-28")
     snapshot.analyst.target_high = 290.0
+    snapshot.meta.price = 300.0  # below the high band 339.32, so the HAS RUN test cannot hold
     score = score_snapshot(snapshot)
     fv = compute_fair_value(snapshot, score.total)
     label = suggest_label(score, fv, snapshot)

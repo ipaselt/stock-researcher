@@ -201,9 +201,12 @@ def test_l5b_beats_l6(price):
     assert _case(price=price, sanity=SANITY).rule_id == "L5b"
 
 
-def test_l5b_beats_l7():
-    assert _case(price=115.01, from_high=0.0).rule_id == "L7"
-    assert _case(price=115.01, from_high=0.0, sanity=SANITY).rule_id == "L5b"
+def test_l5b_steps_aside_for_has_run():
+    # the run test holds: L5b protects BUY only, so HAS RUN still fires on an untrusted fair value
+    assert _case(price=115.01, from_high=0.0, sanity=SANITY).rule_id == "L7"
+    assert _case(price=115.01, ret_1y=0.40, sanity=SANITY).rule_id == "L7"
+    # above the band without the run test: L5b
+    assert _case(price=130.0, from_high=-0.30, ret_1y=0.0, sanity=SANITY).rule_id == "L5b"
 
 
 def test_l5b_with_missing_price():
