@@ -8,6 +8,13 @@ Forward EPS missing or <= 0 -> no fair value, with the reason. Near-zero earning
 yield (forward_eps / price) below MIN_EARNINGS_YIELD (1%, i.e. forward P/E > 100) -> no fair value either;
 exactly 1% is still computed. Without a price this floor is skipped.
 
+Sanity band: a computed fair value is checked against its own market inputs and, on the first failing check,
+`sanity` records why it is not trusted for the label (rule L5b routes around it); the value is still computed,
+reported and explained, never clamped. (a) fair_value > analyst.target_high (SANITY_TARGET; only when it is a
+finite positive number). (b) fair_pe > SANITY_PE_RATIO (2.0) x valuation.forward_pe (only when the forward P/E is
+finite and positive): a regime shift. Both comparisons are strict (equal passes) and both apply to a sector
+default P/E as well as a historical median.
+
 Stated limits (copied into every report):
 - Banks and insurers are valued on book value (P/B), not earnings; this method is the wrong lens for them.
 - REITs are valued on funds from operations (P/FFO); GAAP EPS understates them through depreciation.
@@ -42,6 +49,8 @@ BAND = 0.15
 MOS_TIERS = ((75, 0.05), (60, 0.15))  # (min score, margin of safety), best first
 MOS_DEFAULT = 0.20
 MIN_EARNINGS_YIELD = 0.01  # forward_eps / price below this (forward P/E > 100) -> no earnings-based fair value
+SANITY_PE_RATIO = 2.0  # fair_pe strictly above this multiple of the market's forward P/E -> not trusted (regime shift)
+SANITY_TARGET = "analyst.target_high"  # fair value strictly above this snapshot field -> not trusted
 
 
 @dataclass
@@ -57,6 +66,23 @@ class FairValue:
     entry_price: float | None
     upside: float | None
     reason: str | None  # None when computed, else why not
+    sanity: str | None = None  # None when the computed fair value passes the sanity band, else the first failing check
+
+
+def _positive(v) -> bool:
+    return v is not None and math.isfinite(v) and v > 0
+
+
+def sanity_check(fv: float, fair_pe: float, snapshot) -> str | None:
+    """Why a computed fair value is not trusted for the label (the first failing check), or None when it passes."""
+    hi = snapshot.analyst.target_high
+    if _positive(hi) and fv > hi:
+        return f"fair value {fv:.2f} (fair_value.fair_value) is above the highest analyst target {hi:.2f} ({SANITY_TARGET})"
+    fpe = snapshot.valuation.forward_pe
+    if _positive(fpe) and fair_pe > SANITY_PE_RATIO * fpe:
+        return (f"fair P/E {fair_pe:.1f}x (fair_value.fair_pe) is more than {SANITY_PE_RATIO:g}x the market's "
+                f"forward P/E {fpe:.1f}x (valuation.forward_pe): regime shift")
+    return None
 
 
 def median_pe(pes: list[float] | None) -> tuple[float | None, int]:
@@ -97,4 +123,5 @@ def compute_fair_value(snapshot, score_total: float | None) -> FairValue:
         return FairValue(eps, fair_pe, source, n, None, None, None, mos, None, None, reason)
     fv = eps * fair_pe
     upside = None if price is None else safe_div(fv, price) - 1
-    return FairValue(eps, fair_pe, source, n, fv, fv * (1 - BAND), fv * (1 + BAND), mos, fv * (1 - mos), upside, None)
+    return FairValue(eps, fair_pe, source, n, fv, fv * (1 - BAND), fv * (1 + BAND), mos, fv * (1 - mos), upside, None,
+                     sanity_check(fv, fair_pe, snapshot))

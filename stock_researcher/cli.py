@@ -84,7 +84,10 @@ def _write_score(ticker: str, snapshot):
     out = Path("data") / f"{ticker}.score.json"
     out.write_text(json.dumps(result, indent=2, allow_nan=False), encoding="utf-8")
     total = "n/a" if score.total is None else f"{score.total:.1f} ({score.band_word})"
-    entry = "n/a" if label.entry_target is None else f"{label.entry_target:.2f}"
+    if label.entry_target is not None:
+        entry = f"{label.entry_target:.2f}"
+    else:
+        entry = "—" if label.rule_id == "L5b" else "n/a"
     print(f"{ticker}: score {total}, coverage {score.coverage_pct:.0%}, label {label.label} ({label.rule_id}), entry {entry}")
     return score, fv, label
 

@@ -52,6 +52,7 @@ skip the citation check; do not write more than the verdict file yourself.
    `entry_target` = the score's `entry_price` for WAIT / HAS RUN / BUY, else `none`.
    If the suggested rule was L5 (no fair value) and you override to WAIT or BUY, `entry_target` must be `none`
    (never `null`) unless you cite a price from an agent finding.
+   If the suggested rule was L5b (fair value not trusted), `entry_target` is `none` unless you cite a price from an agent finding (e.g. a moving average from technicals or the analyst mean target).
 8. **Assemble.** `.venv/Scripts/python.exe -m stock_researcher assemble T` → `reports/T-<date>.md` and the rebuilt
    `reports/ratings.csv`.
 9. **Commit the report** (markdown only): `git add reports/T-<date>.md && git commit -m "research: T <label_final> (<date>)" -- reports/T-<date>.md`.

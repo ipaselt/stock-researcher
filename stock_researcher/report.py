@@ -146,7 +146,8 @@ def _verdict(score, fv, label) -> str:
     rows = [
         ("Suggested label", f"{label.label} ({label.rule_id})"), ("Score", total),
         ("Coverage", f"{score.coverage_pct:.0%}"), ("Fair value", fmt_money(fv.fair_value) + band),
-        ("Entry target", fmt_money(label.entry_target)), ("Upside to fair value", fmt_pct(fv.upside)),
+        ("Entry target", "— (fair value not trusted)" if label.rule_id == "L5b" else fmt_money(label.entry_target)),
+        ("Upside to fair value", fmt_pct(fv.upside)),
     ]
     table = "| Item | Value |\n|---|---|\n" + "".join(f"| {k} | {v} |\n" for k, v in rows)
     return f"## Verdict\n\n{table}\n{VERDICT_MARKER}\n"
@@ -188,6 +189,8 @@ def score_table(score, fv, label) -> str:
                      f"{fmt_money(fv.band_high)}), fair P/E {fv.fair_pe:.1f}x ({fv.fair_pe_source.replace('_', ' ')}, "
                      f"{fv.n_years}y), margin of safety {fv.margin_of_safety:.0%}, entry {fmt_money(fv.entry_price)}, "
                      f"upside {fmt_pct(fv.upside)}")
+        if fv.sanity:
+            lines.append(f"not trusted for the label: {fv.sanity}")
     lines.append(f"label {label.label} ({label.rule_id}): {label.reason}")
     return "\n".join(lines)
 
@@ -224,6 +227,8 @@ def _fair_value(snapshot, score, fv) -> str:
             f"- Entry price = {fmt_money(fv.fair_value)} × (1 − {mos}) = **{fmt_money(fv.entry_price)}**.\n"
             f"- Upside from the price {fmt_money(snapshot.meta.price)} to fair value: {fmt_pct(fv.upside)}.\n"
         )
+        if fv.sanity:
+            body += f"\n**Not trusted for the label:** {fv.sanity}\n"
     return f"## Fair value and entry price\n\n{body}\n{LIMITS_HEADING}\n\n{STATED_LIMITS}\n"
 
 

@@ -155,6 +155,9 @@ What each artifact on the way there is:
 - **Fair value uses the company's own median P/E:** the median year-end P/E of its last 3-5 profitable fiscal
   years anchors to how the market has actually priced this business (the median so one distorted year cannot
   move it), with a sector default only when fewer than 3 such years exist ([docs/fair-value.md](docs/fair-value.md)).
+  A sanity band marks a fair value above the highest analyst target, or on a P/E more than 2x the market's
+  forward P/E, as not trusted: it is still printed and explained, but rule L5b suggests WAIT with no entry target
+  instead of letting it trigger BUY or HAS RUN.
 - **The label rule is code and every override is logged:** rules L1-L8 pick the label mechanically; the
   planner may override only with the rule id, the new label and one cited reason, `assemble` refuses a
   silent change, and both labels land in the ledger so the rules' hit rate can be measured

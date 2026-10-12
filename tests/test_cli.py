@@ -104,6 +104,39 @@ def test_score_table(tmp_cwd, fake_cli_provider, capsys):
     assert table[-1].startswith("label HAS RUN (L7): ")
 
 
+def _aapl_with_target_high(tmp_cwd, target_high):
+    """The AAPL fixture snapshot with analyst.target_high replaced (290 < fair value 295.06 -> L5b)."""
+    assert cli.main(["snapshot", "AAPL"]) == 0
+    path = tmp_cwd / "data" / "AAPL.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["analyst"]["target_high"] = target_high
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+
+def test_score_json_carries_sanity(tmp_cwd, fake_cli_provider, capsys):
+    assert cli.main(["snapshot", "AAPL"]) == 0
+    assert cli.main(["score", "AAPL"]) == 0
+    data = _strict_json((tmp_cwd / "data" / "AAPL.score.json").read_text(encoding="utf-8"))
+    assert "sanity" in data["fair_value"] and data["fair_value"]["sanity"] is None
+
+
+def test_score_l5b_summary_and_table(tmp_cwd, fake_cli_provider, capsys):
+    _aapl_with_target_high(tmp_cwd, 290.0)
+    capsys.readouterr()
+    assert cli.main(["score", "AAPL", "--table"]) == 0
+    summary, *table = capsys.readouterr().out.splitlines()
+    assert summary == "AAPL: score 60.1 (good), coverage 94%, label WAIT (L5b), entry —"
+    sanity = ("fair value 295.06 (fair_value.fair_value) is above the highest analyst target 290.00 "
+              "(analyst.target_high)")
+    assert table[-3].startswith("fair value $295.06 (band $250.80 – $339.32)")  # still reported, not clamped
+    assert table[-2] == f"not trusted for the label: {sanity}"
+    assert table[-1].startswith("label WAIT (L5b): fair value not trusted: ")
+    data = _strict_json((tmp_cwd / "data" / "AAPL.score.json").read_text(encoding="utf-8"))
+    assert data["fair_value"]["sanity"] == sanity
+    assert data["fair_value"]["entry_price"] == pytest.approx(250.799, abs=1e-3)
+    assert (data["label_suggestion"]["rule_id"], data["label_suggestion"]["entry_target"]) == ("L5b", None)
+
+
 def test_score_sparse_ticker_is_not_looking(tmp_cwd, fake_cli_provider, capsys):
     assert cli.main(["snapshot", "HCMC"]) == 0
     assert cli.main(["score", "HCMC"]) == 0

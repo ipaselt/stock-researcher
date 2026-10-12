@@ -1,7 +1,8 @@
 import pandas as pd
 import pytest
 
-from stock_researcher.fair_value import DEFAULT_PE, SECTOR_DEFAULT_PE, compute_fair_value, margin_of_safety, median_pe
+from stock_researcher.fair_value import (DEFAULT_PE, SANITY_PE_RATIO, SECTOR_DEFAULT_PE, compute_fair_value,
+                                         margin_of_safety, median_pe)
 from stock_researcher.snapshot import Snapshot, fiscal_year_pe
 
 
@@ -124,3 +125,68 @@ def test_band_entry_and_upside_arithmetic():
 def test_missing_price_has_no_upside():
     fv = compute_fair_value(_snapshot(price=None, pes=[20, 20, 20]), 65)
     assert fv.fair_value == pytest.approx(200) and fv.upside is None
+
+
+# --- sanity band ---
+
+NVDA_EPS, NVDA_PE = 15.68, 723.66 / 15.68  # the NVDA run 2026-09-28: fair value 723.66 on a 46.15x median P/E
+
+
+def _sane(eps=NVDA_EPS, pes=(NVDA_PE,) * 3, price=229.61, target_high=515.0, forward_pe=14.64):
+    snap = _snapshot(eps=eps, pes=list(pes) if pes else None, price=price)
+    snap.analyst.target_high = target_high
+    snap.valuation.forward_pe = forward_pe
+    return compute_fair_value(snap, 87.2)
+
+
+def test_sanity_fires_above_analyst_high_target_nvda():
+    fv = _sane()
+    assert fv.fair_value == pytest.approx(723.66)
+    assert fv.sanity == ("fair value 723.66 (fair_value.fair_value) is above the highest analyst target 515.00 "
+                         "(analyst.target_high)")
+    # transparency: nothing is clamped
+    assert fv.entry_price == pytest.approx(723.66 * 0.95) and fv.band_high == pytest.approx(723.66 * 1.15)
+    assert fv.upside == pytest.approx(723.66 / 229.61 - 1)
+
+
+def test_sanity_fires_on_pe_ratio_alone():
+    fv = _sane(eps=10.0, pes=(46.1,) * 3, price=146.0, target_high=None, forward_pe=14.6)
+    assert fv.sanity == ("fair P/E 46.1x (fair_value.fair_pe) is more than 2x the market's forward P/E 14.6x "
+                         "(valuation.forward_pe): regime shift")
+
+
+def test_sanity_target_check_wins_when_both_fail():
+    assert "analyst.target_high" in _sane().sanity
+
+
+@pytest.mark.parametrize("target_high, forward_pe", [(200.0, 10.0), (float("inf"), 10.0)])
+def test_sanity_boundaries_are_strict(target_high, forward_pe):
+    # fair P/E exactly SANITY_PE_RATIO x forward P/E passes; a fair value exactly at the high target passes
+    fv = _sane(eps=10.0, pes=(SANITY_PE_RATIO * forward_pe,) * 3, price=150.0, target_high=target_high,
+               forward_pe=forward_pe)
+    assert fv.fair_value == pytest.approx(200.0) and fv.sanity is None
+    assert _sane(eps=10.0, pes=(20.0000001,) * 3, price=150.0, target_high=None, forward_pe=10.0).sanity is not None
+    assert _sane(eps=10.0, pes=(20.0,) * 3, price=150.0, target_high=199.99, forward_pe=10.0).sanity is not None
+
+
+@pytest.mark.parametrize("target_high, forward_pe", [(None, None), (0.0, 0.0), (-5.0, -3.0),
+                                                     (float("nan"), float("nan"))])
+def test_sanity_none_without_usable_market_data(target_high, forward_pe):
+    assert _sane(target_high=target_high, forward_pe=forward_pe).sanity is None
+
+
+def test_sanity_checks_sector_default_too():
+    fv = _sane(eps=10.0, pes=None, price=100.0, target_high=200.0, forward_pe=10.0)  # Technology default 25
+    assert fv.fair_pe_source == "sector_default" and fv.fair_value == pytest.approx(250)
+    assert "analyst.target_high" in fv.sanity
+    fv = _sane(eps=10.0, pes=None, price=100.0, target_high=None, forward_pe=12.0)
+    assert fv.sanity.startswith("fair P/E 25.0x (fair_value.fair_pe) is more than 2x")
+
+
+def test_sanity_none_without_fair_value():
+    fv = _sane(eps=-1.0)
+    assert fv.fair_value is None and fv.sanity is None
+
+
+def test_sane_fair_value_passes():
+    assert _sane(eps=10.0, pes=(20.0,) * 3, price=180.0, target_high=250.0, forward_pe=18.0).sanity is None

@@ -16,6 +16,7 @@ fair value × 1.15 (the ±15% band from `fair-value.md`).
 | L3 | score below 45 **and** price above the fair-value high band | SELL |
 | L4 | score below 55 | NOT LOOKING |
 | L5 | no fair value (EPS missing, ≤ 0, or forward P/E > 100) | NOT LOOKING (the planner may override for growth names) |
+| L5b | fair value fails the sanity band (`fair_value.sanity` set: above `analyst.target_high`, or fair P/E more than 2x `valuation.forward_pe`) | WAIT, with no entry target (the planner may cite a target from an agent finding) |
 | L6 | price at or below the entry price | BUY |
 | L7 | price above the fair-value high band **and** (within 5% of the 52-week high **or** 1-year return at or above 40%) | HAS RUN |
 | L8 | otherwise | WAIT, with the entry target |
@@ -27,14 +28,18 @@ Details that decide edge cases:
 - A health subscore of None (nothing in the category covered) does not trigger L2.
 - An unavailable price fails every price test (L3, L6, L7) and falls through to L8 (WAIT with the entry
   target).
-- L6, L7 and L8 carry the entry target (fair value × (1 − margin of safety)); L1-L5 carry none.
+- L6, L7 and L8 carry the entry target (fair value × (1 − margin of safety)); L1-L5 and L5b carry none.
+- L5b comes after L5 and before L6: an untrusted fair value cannot trigger BUY or HAS RUN. L3 is unchanged;
+  an inflated fair value normally keeps the price below its high band, and a price above even that band is
+  above a lower true value too. The sanity checks are in [fair-value.md](fair-value.md#sanity-band).
 
 ## What each label means for the owner's process
 
 - **BUY** — the price is at or below the entry price: a good-enough business (score ≥ 55) trading at a margin
   of safety below fair value. Start or add to a position, sized by conviction.
 - **WAIT** — a good-enough business priced above the entry price (or with no price) that has not been
-  flagged HAS RUN. Keep it on the watchlist with the entry target as a price alert.
+  flagged HAS RUN. Keep it on the watchlist with the entry target as a price alert. Under L5b the fair value
+  is not trusted, so there is no rule entry target; use one the planner cites, or none.
 - **HAS RUN** — the price is above fair value's high band and the stock is near its 52-week high or up 40%+
   in a year. Do not chase; if held, it is a candidate to trim; revisit after a pullback.
 - **SELL** — a weak business (score below 45) priced above fair value. If held, exit; if not, avoid.

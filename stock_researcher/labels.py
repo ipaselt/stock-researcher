@@ -1,15 +1,22 @@
-"""Suggested label: the first matching rule of L1-L8 wins; the rule id and the numbers it used are recorded.
+"""Suggested label: the first matching rule wins (L1-L8, with L5b between L5 and L6); the rule id and the
+numbers it used are recorded.
 
 L1 coverage < 60% (or no score)                     -> NOT LOOKING (data)
 L2 health category score < 30                        -> NOT LOOKING (balance sheet)
 L3 score < 45 and price > fair-value high band       -> SELL
 L4 score < 55                                        -> NOT LOOKING
 L5 no fair value                                     -> NOT LOOKING (the planner may override for growth names)
+L5b fair value fails the sanity band (fv.sanity set) -> WAIT with no entry target (the planner may cite one)
 L6 price <= entry price                              -> BUY
 L7 price > fair-value high band and (within 5% of the 52-week high or 1y return >= 40%) -> HAS RUN
 L8 otherwise                                         -> WAIT, with the entry target
 The fair-value high band is fair_value x 1.15 (fair_value.BAND). A price that is unavailable fails every
 price test and falls through to L8.
+L5b keeps an untrusted fair value from triggering BUY (L6) or HAS RUN (L7). L3 also compares the price to the
+high band but is left as is: a fair value that fails the sanity band is inflated (above the highest analyst target,
+or on a P/E more than 2x the market's, which puts it above about 2x the price), so the price is normally below its
+high band and L3 cannot fire; if the price is above even an inflated high band, it is above a lower true one too,
+so SELL stands. With a fair value that passes, nothing changes.
 """
 from dataclasses import dataclass
 
@@ -47,6 +54,10 @@ def suggest_label(score, fv, snapshot) -> LabelSuggestion:
     if fv.fair_value is None:
         return LabelSuggestion(
             "NOT LOOKING", "L5", f"no fair value ({fv.reason}); planner may override for growth names"
+        )
+    if fv.sanity:
+        return LabelSuggestion(
+            "WAIT", "L5b", f"fair value not trusted: {fv.sanity}; no entry target (planner may cite one)", None
         )
     entry = fv.entry_price
     if price is not None and price <= entry:
