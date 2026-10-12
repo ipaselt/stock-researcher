@@ -6,4 +6,4 @@
 > *(Where-are-we = this board + the top of `../memory/completed-tasks.md`; what's-next = `todo.md`.)*
 
 ## In progress
-*(empty — website live 2026-10-11 at https://stock-researcher-ipaselt.vercel.app; next work comes from the backlog in `todo.md`)*
+*(empty — #10 merged 2026-10-11; next work comes from the backlog in `todo.md`)*

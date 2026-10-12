@@ -42,6 +42,19 @@ the code, and `docs/scorecard.md` together. Two S2 refinements adopted from revi
 not produce a $0.40 "entry price"; (2) negative `debt_to_equity` (buyback-driven negative equity) is
 skipped, not graded A, because the ratio has no reading there.
 
+## 2026-10-11 — Fair-value sanity band (rule L5b), not a clamp
+The NVDA run (2026-09-28) produced a fair value of $724 on a $230 stock: forward EPS × a median fiscal-year
+P/E from hypergrowth years, above every analyst target; rule L6 fired BUY and the planner overrode by hand.
+Options: clamp the fair value to the analyst range (hides the method), drop the method for growth names (loses
+transparency), or keep the number and stop trusting it when its own inputs disagree. Chose the third: a
+`sanity` reason is set when the fair value exceeds `analyst.target_high` or the fair P/E is more than 2× the
+market's forward P/E; the value is still computed, printed and explained, and a new rule L5b (after L5, before
+L6) yields WAIT with no entry target unless the planner cites one. Strict `>` on both checks. Ids L1-L8 are
+unchanged so the ledger stays comparable. **Refined in review:** L5b guards BUY only — an inflated fair value
+can only wrongly trigger L6; a price above an inflated high band is above the true one too, so L3 (SELL) and
+L7 (HAS RUN) still fire. The band is deliberately one-sided: a fair value below the analyst low target is not
+flagged, because a deflated fair value can only push toward SELL / HAS RUN, which errs toward caution.
+
 ## 2026-09-28 — Ledger derived from report front-matter
 `main-protection` allows only `.md` commits on main outside PRs. Reports are `.md` with YAML front-matter;
 `reports/ratings.csv` is regenerated from them (gitignored), so a research run commits without a PR.

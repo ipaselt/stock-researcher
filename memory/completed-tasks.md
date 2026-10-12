@@ -2,6 +2,11 @@
 
 *(The planner moves merged tasks here from `../planning/progress.md`.)*
 
+- ✅ **#10** Fair-value sanity band — 2026-10-11, PR #10 merged (ccd9b98). `FairValue.sanity` (fair value above
+  `analyst.target_high`, or fair P/E more than double the forward P/E; strict, one-sided, still computed and
+  printed) + rule L5b (WAIT, no entry target) that guards BUY only; L7 on an untrusted fair value drops its
+  entry target; docs/README/command updated; 619 tests. Review: SHIP-WITH-FIXES → SHIP (the first cut wrongly
+  blocked HAS RUN; the reason string was not citation-safe). NVDA-shaped data now suggests WAIT (L5b).
 - ✅ **#11** S11 Web — 2026-10-11, PR #7 merged (425d9c0). Static Next.js 16 site in `web/`: front-matter
   parser with Python parity, index from report front-matter (ledger CSV is gitignored), `/`, `/reports/[slug]`,
   `/methodology/[doc]`, OG images, all SSG (no `ƒ` routes); 16 vitest tests; `.claude/launch.json` (port 3001);

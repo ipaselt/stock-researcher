@@ -15,7 +15,7 @@ skip the citation check; do not write more than the verdict file yourself.
    `data/T/skeleton.md`.
 3. **Read the score.** Read `data/T.score.json` and note: `total`, `band_word`, `coverage_pct`,
    `label_suggestion` (label, rule_id, reason, entry_target), `fair_value` (fair_value, band_high, entry_price,
-   fair_pe_source, reason). Do not read the whole snapshot.
+   fair_pe_source, reason, sanity). Do not read the whole snapshot.
 4. **Fan out the five analysts in ONE message** — `valuation`, `growth-quality`, `balance-sheet-risk`,
    `technicals`, `news-catalysts` (five parallel `Agent` calls, `subagent_type` = the agent name,
    run in the background). Each dispatch message contains: the ticker, the absolute paths of `data/T.json` and
