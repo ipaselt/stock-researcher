@@ -6,4 +6,4 @@
 > *(Where-are-we = this board + the top of `../memory/completed-tasks.md`; what's-next = `todo.md`.)*
 
 ## In progress
-- 🔄 **#11** S11 Web · **owner:** opus-worker (sub-agent) · branch `branches/s11-web` · status: dispatched 2026-09-28 — Next.js 16 App Router site in `web/` (static pages from `reports/*.md` + `docs/*.md`, front-matter parser with Python parity, vitest, launch.json entry, README section, `/research` step 9 pushes) → PR `needs-review` → review → preview on port 3001 → merge → owner imports the repo on Vercel (Root Directory `web`).
+*(empty — website live 2026-10-11 at https://stock-researcher-ipaselt.vercel.app; next work comes from the backlog in `todo.md`)*

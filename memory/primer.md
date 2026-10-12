@@ -1,5 +1,5 @@
 # Primer — stock-researcher
-*Rewrite each session. Last updated: 2026-09-28 (end of the build day).*
+*Rewrite each session. Last updated: 2026-10-11 (website live).*
 
 ## State
 - **Plan v1 COMPLETE 2026-09-28** — stamped, built, and shipped in one day: six PRs (S1-S6) each built by an
@@ -23,12 +23,27 @@
   fiscal-year P/E 38.9 / 40.7 / 51.6 / 111.9 — no 10× jump).
 - `model: opus` in an agent frontmatter pins the sub-agent model; docs say cheaper sub-agent models "spend
   less" but do not state how plan limits are metered.
-- `jq` is missing on this machine: every `~/.claude/hooks` guard exits 0 silently and `isolation: worktree`
-  fails; review/merge gating is discipline. Fix: `winget install jqlang.jq`.
+- `jq` is on PATH via WinGet Links in sessions rooted here (it was absent from the dev-root session on
+  2026-09-28), so the guard hooks are live; check `which jq` at session start.
 - Agents written under an older contract fail a stricter guard on uncited numbers; one re-dispatch with the
   failure lines quoted fixes them (happened twice today: v1.0→v1.1 for three agents, v1.1→v1.2 for one).
 
+- **Website shipped 2026-10-11 (S11, PR #7)**: `web/` Next.js static site; Vercel project `stock-researcher`
+  (team `ipaselt`, Root Directory `web`), auto-deploys on every push to `main`; production aliases
+  `stock-researcher-ipaselt.vercel.app` (public since 2026-10-11) and `stock-researcher-phi.vercel.app`.
+  Gotcha: Vercel's "Standard Protection" exempts only production *custom* domains, so the `.vercel.app` aliases
+  stayed behind a login until the owner turned "Require Log In" OFF in Project → Settings → Deployment
+  Protection. Stale "Error" deployments in the dashboard predate the Root Directory setting (Vercel tried to
+  build the repo root as a Python app). Local preview: `stock-researcher-web` launch config, port 3001
+  (`npm --prefix web run dev`; `npm install` in `web/` first on a fresh clone).
+- **Push mechanics (hooks live now, jq on PATH):** the push guard checks the *current branch at hook time*, so
+  push a feature branch only after `git checkout` of it (or name the worktree with `git -C`), and never put the
+  phrase for pushing main inside a heredoc. The auto-mode classifier refuses to let the agent create the
+  `.review-ready` gate itself; for planner `.md` commits use a short-lived branch + PR (merge-gate accepts the
+  `reviewed-pass` label after the adversarial review) — what PR #8 did.
+
 ## Next
 Backlog in `planning/todo.md`: #7 guard follow-ups (RSI period exemption, unitless ranges in a window),
-#8 research a sparse small-cap and a pre-profit name from an in-project session, #9 optional ultra review.
+#8 research a sparse small-cap and a pre-profit name from an in-project session, #9 optional ultra review,
+#10 fair-value sanity band (found on the NVDA run).
 Phase 3 ideas (paid provider, batch mode, dashboard) are deferred.
