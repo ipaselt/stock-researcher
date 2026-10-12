@@ -203,8 +203,10 @@ def test_l5b_beats_l6(price):
 
 def test_l5b_steps_aside_for_has_run():
     # the run test holds: L5b protects BUY only, so HAS RUN still fires on an untrusted fair value
-    assert _case(price=115.01, from_high=0.0, sanity=SANITY).rule_id == "L7"
-    assert _case(price=115.01, ret_1y=0.40, sanity=SANITY).rule_id == "L7"
+    for s in (_case(price=115.01, from_high=0.0, sanity=SANITY), _case(price=115.01, ret_1y=0.40, sanity=SANITY)):
+        assert (s.label, s.rule_id, s.entry_target) == ("HAS RUN", "L7", None)  # no untrusted entry in the ledger
+        assert s.reason.endswith(f"; entry target not trusted: {SANITY}")
+    assert _case(price=115.01, from_high=0.0).entry_target == pytest.approx(85)  # a trusted L7 keeps it
     # above the band without the run test: L5b
     assert _case(price=130.0, from_high=-0.30, ret_1y=0.0, sanity=SANITY).rule_id == "L5b"
 

@@ -146,7 +146,8 @@ def _verdict(score, fv, label) -> str:
     rows = [
         ("Suggested label", f"{label.label} ({label.rule_id})"), ("Score", total),
         ("Coverage", f"{score.coverage_pct:.0%}"), ("Fair value", fmt_money(fv.fair_value) + band),
-        ("Entry target", "— (fair value not trusted)" if label.rule_id == "L5b" else fmt_money(label.entry_target)),
+        ("Entry target", "— (fair value not trusted)" if fv.sanity and label.entry_target is None
+         else fmt_money(label.entry_target)),
         ("Upside to fair value", fmt_pct(fv.upside)),
     ]
     table = "| Item | Value |\n|---|---|\n" + "".join(f"| {k} | {v} |\n" for k, v in rows)

@@ -15,7 +15,8 @@ price test and falls through to L8.
 L5b guards BUY only: an inflated fair value can only wrongly trigger BUY (L6), so an untrusted one (fv.sanity
 set) suggests WAIT with no entry target unless the L7 run test holds. L7's condition is computed first and L5b
 steps aside for it; L3 is left as is too. A price above an inflated high band is above the true one as well, so
-SELL (L3) and HAS RUN (L7) still stand. With a fair value that passes, nothing changes.
+SELL (L3) and HAS RUN (L7) still stand; an L7 on an untrusted fair value carries no entry target (the reason
+says why). With a fair value that passes, nothing changes.
 """
 from dataclasses import dataclass
 
@@ -69,9 +70,10 @@ def suggest_label(score, fv, snapshot) -> LabelSuggestion:
     if price is not None and price <= entry:
         return LabelSuggestion("BUY", "L6", f"price {price:.2f} <= entry {entry:.2f}", entry)
     if why:
-        return LabelSuggestion(
-            "HAS RUN", "L7", f"price {price:.2f} > fair-value high {fv.band_high:.2f} and {why}", entry
-        )
+        reason = f"price {price:.2f} > fair-value high {fv.band_high:.2f} and {why}"
+        if fv.sanity:  # HAS RUN stands, but an untrusted entry never reaches the ledger
+            return LabelSuggestion("HAS RUN", "L7", f"{reason}; entry target not trusted: {fv.sanity}", None)
+        return LabelSuggestion("HAS RUN", "L7", reason, entry)
     if price is None:
         return LabelSuggestion("WAIT", "L8", f"price unavailable; entry {entry:.2f}", entry)
     return LabelSuggestion("WAIT", "L8", f"price {price:.2f} > entry {entry:.2f} (fair value {fv.fair_value:.2f})", entry)

@@ -141,7 +141,7 @@ def test_score_l5b_summary_and_table(tmp_cwd, fake_cli_provider, capsys):
 
 def test_score_untrusted_fair_value_still_has_run(tmp_cwd, fake_cli_provider, capsys):
     # the reviewer's case: analysts below the model (target_high 290 < fair value 295.06), price 350 above the
-    # high band 339.32, 1% from the 52-week high -> HAS RUN (L7), with the sanity string still recorded
+    # high band 339.32, 1% from the 52-week high -> HAS RUN (L7) with no entry target, sanity still recorded
     _aapl_with_target_high(tmp_cwd, 290.0)
     path = tmp_cwd / "data" / "AAPL.json"
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -149,9 +149,11 @@ def test_score_untrusted_fair_value_still_has_run(tmp_cwd, fake_cli_provider, ca
     path.write_text(json.dumps(data), encoding="utf-8")
     capsys.readouterr()
     assert cli.main(["score", "AAPL"]) == 0
-    assert capsys.readouterr().out.strip() == "AAPL: score 60.1 (good), coverage 94%, label HAS RUN (L7), entry 250.80"
+    assert capsys.readouterr().out.strip() == "AAPL: score 60.1 (good), coverage 94%, label HAS RUN (L7), entry —"
     result = _strict_json((tmp_cwd / "data" / "AAPL.score.json").read_text(encoding="utf-8"))
-    assert (result["label_suggestion"]["label"], result["label_suggestion"]["rule_id"]) == ("HAS RUN", "L7")
+    label = result["label_suggestion"]
+    assert (label["label"], label["rule_id"], label["entry_target"]) == ("HAS RUN", "L7", None)
+    assert "not trusted" in label["reason"]
     assert result["fair_value"]["sanity"] == ("fair value 295.06 (fair_value.fair_value) is above the highest "
                                               "analyst target 290.00 (analyst.target_high)")
 

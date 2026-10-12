@@ -87,7 +87,7 @@ def _write_score(ticker: str, snapshot):
     if label.entry_target is not None:
         entry = f"{label.entry_target:.2f}"
     else:
-        entry = "—" if label.rule_id == "L5b" else "n/a"
+        entry = "—" if fv.sanity else "n/a"
     print(f"{ticker}: score {total}, coverage {score.coverage_pct:.0%}, label {label.label} ({label.rule_id}), entry {entry}")
     return score, fv, label
 
